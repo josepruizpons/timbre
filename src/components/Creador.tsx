@@ -1,10 +1,28 @@
 import { useMemo, useRef, useState } from 'react'
-import Hoja from './Hoja.jsx'
-import { CATALOGO, BLOQUES } from '../data/catalog.js'
-import { contextoDe, precargar } from '../lib/expediente.js'
-import { HOY } from '../lib/format.js'
 
-const TIPOS = [
+import Hoja from './Hoja'
+import { CATALOGO, BLOQUES } from '../data/catalog'
+import { contextoDe, precargar } from '../lib/expediente'
+import { hoy } from '../lib/format'
+import { useApp } from '../contexts/app_context'
+import type { Campo, Expediente, Plantilla, PlantillaDTO, TipoCampo } from '../types'
+
+/**
+ * Un campo mientras se edita: aquí todo está presente aunque esté vacío, para
+ * que los `input` sean siempre controlados. Al guardar se poda lo que no vale.
+ */
+interface CampoEditor {
+  clave: string
+  etiqueta: string
+  tipo: TipoCampo
+  grupo: string
+  requerido: boolean
+  pista: string
+  auto: string
+  opciones: string[]
+}
+
+const TIPOS: { v: TipoCampo; n: string }[] = [
   { v: 'text', n: 'Texto' },
   { v: 'textarea', n: 'Texto largo' },
   { v: 'number', n: 'Número' },
@@ -22,7 +40,7 @@ Escribe aquí el texto. Inserta los campos con los botones de arriba.
 
 > Advertencia o nota al pie del documento.`
 
-function slug(texto) {
+function slug(texto: string): string {
   const base = texto
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -35,11 +53,11 @@ function slug(texto) {
     .join('')
 }
 
-function campoNuevo(n) {
+function campoNuevo(n: number): CampoEditor {
   return {
     clave: `campo${n}`,
     etiqueta: '',
-    tipo: 'text',
+    tipo: 'text' as TipoCampo,
     grupo: 'Datos',
     requerido: false,
     pista: '',
@@ -48,7 +66,16 @@ function campoNuevo(n) {
   }
 }
 
-export default function Creador({ plantillaBase, requisitoSugerido, expedienteMuestra, onGuardar, onCancelar }) {
+interface CreadorProps {
+  plantillaBase: Plantilla | null
+  requisitoSugerido?: string
+  expedienteMuestra: Expediente | null
+  onGuardar: (plantilla: PlantillaDTO) => void
+  onCancelar: () => void
+}
+
+export default function Creador({ plantillaBase, requisitoSugerido, expedienteMuestra, onGuardar, onCancelar }: CreadorProps) {
+  const { agente } = useApp()
   const editando = Boolean(plantillaBase)
 
   const [meta, setMeta] = useState(() => ({
@@ -57,9 +84,16 @@ export default function Creador({ plantillaBase, requisitoSugerido, expedienteMu
     descripcion: plantillaBase?.descripcion || '',
     version: plantillaBase?.version || '1.0'
   }))
-  const [campos, setCampos] = useState(() =>
+  const [campos, setCampos] = useState<CampoEditor[]>(() =>
     plantillaBase
-      ? plantillaBase.campos.map((c) => ({ ...c, opciones: c.opciones || [], auto: c.auto || '' }))
+      ? plantillaBase.campos.map((c) => ({
+          ...c,
+          grupo: c.grupo || 'Datos',
+          requerido: Boolean(c.requerido),
+          pista: c.pista || '',
+          opciones: c.opciones || [],
+          auto: c.auto || '',
+        }))
       : [
           { ...campoNuevo(1), clave: 'municipio', etiqueta: 'Municipio', grupo: 'Datos', auto: 'municipio', requerido: true },
           { ...campoNuevo(2), clave: 'fecha', etiqueta: 'Fecha del documento', tipo: 'date', grupo: 'Datos', auto: 'hoy', requerido: true }
@@ -67,31 +101,39 @@ export default function Creador({ plantillaBase, requisitoSugerido, expedienteMu
   )
   const [cuerpo, setCuerpo] = useState(plantillaBase?.cuerpo || CUERPO_INICIAL)
   const [error, setError] = useState('')
-  const cuerpoRef = useRef(null)
+  const cuerpoRef = useRef<HTMLTextAreaElement>(null)
 
-  const clavesAuto = useMemo(() => Object.keys(contextoDe(expedienteMuestra)), [expedienteMuestra])
+  const clavesAuto = useMemo(
+    () => (expedienteMuestra ? Object.keys(contextoDe(expedienteMuestra, agente)) : []),
+    [expedienteMuestra, agente]
+  )
 
-  const borrador = useMemo(
+  const borrador: Plantilla = useMemo(
     () => ({
       id: plantillaBase?.id || 'borrador',
       nombre: meta.nombre || 'Plantilla sin título',
       requisito: meta.requisito,
+      autor: plantillaBase?.autor ?? agente?.nombre ?? null,
+      version: meta.version,
+      actualizada: hoy(),
+      usos: plantillaBase?.usos ?? 0,
+      descripcion: meta.descripcion,
       campos: campos.filter((c) => c.clave),
       cuerpo
     }),
-    [plantillaBase?.id, meta, campos, cuerpo]
+    [plantillaBase, meta, campos, cuerpo, agente]
   )
 
   const valoresMuestra = useMemo(
-    () => precargar(borrador, expedienteMuestra, {}),
-    [borrador, expedienteMuestra]
+    () => (expedienteMuestra ? precargar(borrador, expedienteMuestra, agente) : {}),
+    [borrador, expedienteMuestra, agente]
   )
 
-  const actualizarCampo = (i, parche) => {
+  const actualizarCampo = (i: number, parche: Partial<CampoEditor>) => {
     setCampos((prev) => prev.map((c, j) => (j === i ? { ...c, ...parche } : c)))
   }
 
-  const mover = (i, delta) => {
+  const mover = (i: number, delta: number) => {
     setCampos((prev) => {
       const j = i + delta
       if (j < 0 || j >= prev.length) return prev
@@ -101,7 +143,7 @@ export default function Creador({ plantillaBase, requisitoSugerido, expedienteMu
     })
   }
 
-  const insertarToken = (clave) => {
+  const insertarToken = (clave: string) => {
     const ta = cuerpoRef.current
     const token = `{{${clave}}}`
     if (!ta) {
@@ -135,15 +177,14 @@ export default function Creador({ plantillaBase, requisitoSugerido, expedienteMu
     }
     setError('')
     onGuardar({
-      id: plantillaBase?.id || `plt-${Date.now().toString(36)}`,
+      ...(plantillaBase ? { id: plantillaBase.id } : {}),
       nombre: meta.nombre.trim(),
       requisito: meta.requisito,
       descripcion: meta.descripcion.trim() || 'Plantilla creada desde el editor.',
       version: meta.version || '1.0',
-      autor: 'Nuria Sanchís',
-      actualizada: HOY,
-      usos: plantillaBase?.usos ?? 0,
-      campos: utiles.map((c) => ({
+      autor: plantillaBase?.autor ?? agente?.nombre ?? null,
+      actualizada: hoy(),
+      campos: utiles.map((c): Campo => ({
         clave: c.clave.trim(),
         etiqueta: c.etiqueta.trim(),
         tipo: c.tipo,
@@ -169,7 +210,7 @@ export default function Creador({ plantillaBase, requisitoSugerido, expedienteMu
           <h1 className="cabecera__titulo">{meta.nombre || 'Plantilla sin título'}</h1>
           <p className="cabecera__pie">
             Define los campos y escribe el cuerpo. La vista previa de la derecha usa el expediente{' '}
-            {expedienteMuestra.id} para enseñarte cómo queda con datos reales.
+            {expedienteMuestra?.referencia ?? '—'} para enseñarte cómo queda con datos reales.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -330,7 +371,7 @@ export default function Creador({ plantillaBase, requisitoSugerido, expedienteMu
                     <select
                       className="campo"
                       value={c.tipo}
-                      onChange={(e) => actualizarCampo(i, { tipo: e.target.value })}
+                      onChange={(e) => actualizarCampo(i, { tipo: e.target.value as TipoCampo })}
                     >
                       {TIPOS.map((t) => (
                         <option key={t.v} value={t.v}>
@@ -425,7 +466,7 @@ export default function Creador({ plantillaBase, requisitoSugerido, expedienteMu
               <br />
               Filtros: <code>{'{{precio|eur}}'}</code> da 425.000,00 € ·{' '}
               <code>{'{{precio|letra}}'}</code> lo escribe en palabras ·{' '}
-              <code>{'{{fecha|fecha}}'}</code> da 14 de agosto de 2026 ·{' '}
+              <code>{'{{fecha|fecha}}'}</code> escribe la fecha en largo ·{' '}
               <code>{'{{nombre|may}}'}</code> pasa a mayúsculas.
             </p>
           </section>
@@ -433,9 +474,9 @@ export default function Creador({ plantillaBase, requisitoSugerido, expedienteMu
 
         <div className="creador__previa">
           <div className="seccion__cab" style={{ marginBottom: 10 }}>
-            <span className="rotulo">Vista previa con {expedienteMuestra.id}</span>
+            <span className="rotulo">Vista previa con {expedienteMuestra?.referencia ?? '—'}</span>
           </div>
-          <Hoja plantilla={borrador} valores={valoresMuestra} expedienteId={expedienteMuestra.id} />
+          <Hoja plantilla={borrador} valores={valoresMuestra} expedienteId={expedienteMuestra?.id ?? ''} />
         </div>
       </div>
     </>

@@ -1,9 +1,18 @@
 import { useMemo, useState } from 'react'
-import Sello from './Sello.jsx'
-import { resumen, etiquetaFirma, urgenciaFirma } from '../lib/expediente.js'
-import { euros, fechaCorta, enLetras } from '../lib/format.js'
 
-function Ficha({ exp, res, onAbrir }) {
+import Sello from './Sello'
+import { resumen, etiquetaFirma, urgenciaFirma } from '../lib/expediente'
+import type { ResumenExpediente } from '../lib/expediente'
+import { euros, fechaCorta, enLetras } from '../lib/format'
+import type { Expediente } from '../types'
+
+interface FichaProps {
+  exp: Expediente
+  res: ResumenExpediente
+  onAbrir: (id: string) => void
+}
+
+function Ficha({ exp, res, onAbrir }: FichaProps) {
   const cerrado = exp.estado !== 'activo'
   const dias = urgenciaFirma(exp)
   // El filete lateral dice lo mismo que los contadores de arriba: carmín para
@@ -19,12 +28,12 @@ function Ficha({ exp, res, onAbrir }) {
         progreso={cerrado ? 1 : res.progreso}
         tamano={54}
         estado={exp.estado}
-        referencia={exp.id}
+        referencia={exp.referencia}
       />
 
       <div>
         <div className="ficha__id">
-          <span className="ficha__ref">{exp.id}</span>
+          <span className="ficha__ref">{exp.referencia}</span>
           <span className="marca">{exp.fase}</span>
           {exp.protocolo && <span className="marca">protocolo {exp.protocolo}</span>}
         </div>
@@ -69,8 +78,15 @@ function Ficha({ exp, res, onAbrir }) {
   )
 }
 
-export default function Panel({ expedientes, onAbrir }) {
-  const [pestana, setPestana] = useState('activos')
+interface PanelProps {
+  expedientes: Expediente[]
+  onAbrir: (id: string) => void
+}
+
+type Pestana = 'activos' | 'historial'
+
+export default function Panel({ expedientes, onAbrir }: PanelProps) {
+  const [pestana, setPestana] = useState<Pestana>('activos')
   const [consulta, setConsulta] = useState('')
 
   const conResumen = useMemo(
@@ -87,7 +103,7 @@ export default function Panel({ expedientes, onAbrir }) {
     const caducados = activos.reduce((s, x) => s + x.res.caducados, 0)
     const proxima = activos
       .map((x) => urgenciaFirma(x.exp))
-      .filter((d) => d !== null)
+      .filter((d): d is number => d !== null)
       .sort((a, b) => a - b)[0]
     return { pendientes, porCaducar, caducados, proxima }
   }, [activos])
@@ -96,7 +112,7 @@ export default function Panel({ expedientes, onAbrir }) {
   const q = consulta.trim().toLowerCase()
   const lista = (q
     ? base.filter(({ exp }) =>
-        [exp.id, exp.direccion, exp.municipio, exp.vendedor, exp.comprador]
+        [exp.referencia, exp.direccion, exp.municipio, exp.vendedor, exp.comprador]
           .join(' ')
           .toLowerCase()
           .includes(q)
@@ -112,7 +128,10 @@ export default function Panel({ expedientes, onAbrir }) {
     <>
       <header className="cabecera">
         <div>
-          <span className="rotulo">Cartera · agosto de 2026</span>
+          <span className="rotulo">
+            Cartera ·{' '}
+            {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+          </span>
           <h1 className="cabecera__titulo">
             {enLetras(activos.length).replace(/^./, (c) => c.toUpperCase())} expedientes
             <br />

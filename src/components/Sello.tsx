@@ -1,5 +1,14 @@
 import { useMemo } from 'react'
-import { sealRings } from '../lib/guilloche.js'
+import { sealRings } from '../lib/guilloche'
+
+interface SelloProps {
+  progreso?: number
+  tamano?: number
+  referencia?: string
+  lugar?: string
+  estado?: string
+  estampando?: boolean
+}
 
 /**
  * El sello del expediente. Cada anillo de guilloche es una porción del avance:
@@ -13,7 +22,7 @@ export default function Sello({
   lugar = '',
   estado = 'activo',
   estampando = false
-}) {
+}: SelloProps) {
   const detalle = tamano >= 90 ? 'full' : 'compact'
   const anillos = useMemo(() => sealRings(detalle), [detalle])
   const entintados = Math.round(Math.min(1, Math.max(0, progreso)) * anillos.length)

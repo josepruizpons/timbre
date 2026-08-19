@@ -1690,3 +1690,56 @@ textarea.campo {
     padding: 18px 18px 26px;
   }
 }
+
+/* ─── Acceso ──────────────────────────────────────────────────────────────── */
+/* La pantalla de entrada se compone sobre el mismo papel que el resto, con la
+   caja centrada como una diligencia sobre la hoja. */
+
+.acceso {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.acceso__caja {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 30px 28px 28px;
+  background: var(--papel);
+  border: 1px solid var(--linea);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 var(--linea), 0 18px 40px -28px var(--tinta);
+}
+
+.acceso__marca {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.acceso__nombre {
+  display: block;
+  font-family: var(--display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--tinta);
+}
+
+.acceso__sub {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--grafito);
+}
+
+.acceso__btn {
+  margin-top: 4px;
+  justify-content: center;
+}

@@ -1,9 +1,16 @@
+import type { EstadoEfectivo } from '../types'
+
+interface CasillaProps {
+  estado?: EstadoEfectivo
+  tamano?: number
+}
+
 /**
  * Casilla de verificación dibujada a mano. El trazo se entinta al confirmarse
  * el requisito; en caducado y caduca conserva la marca pero cambia de tinta,
  * porque el documento existe: lo que falla es su vigencia.
  */
-export default function Casilla({ estado = 'pendiente', tamano = 17 }) {
+export default function Casilla({ estado = 'pendiente', tamano = 17 }: CasillaProps) {
   const marcada = estado === 'vigente' || estado === 'caducado' || estado === 'caduca'
   const clase =
     estado === 'vigente'

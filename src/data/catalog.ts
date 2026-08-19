@@ -1,8 +1,12 @@
+import type { Bloque, DefRequisito, Expediente } from '../types'
+
 // Catálogo de requisitos de una compraventa de vivienda en España.
+// Vive en el código, no en la base de datos: sus reglas de aplicabilidad son
+// predicados sobre las circunstancias del expediente.
 // `vigencia` = días de validez del documento una vez emitido (null = no caduca).
 // `aplica` decide si el requisito entra en el expediente según sus circunstancias.
 
-export const BLOQUES = [
+export const BLOQUES: Bloque[] = [
   { sigla: 'IN', nombre: 'Inmueble', descripcion: 'Situación registral, física y energética de la finca' },
   { sigla: 'PT', nombre: 'Partes', descripcion: 'Identidad y capacidad de vendedor y comprador' },
   { sigla: 'FN', nombre: 'Financiación', descripcion: 'Hipoteca del comprador y cargas del vendedor' },
@@ -11,12 +15,12 @@ export const BLOQUES = [
 ]
 
 // Comunidades que siguen exigiendo cédula de habitabilidad para transmitir.
-export const CCAA_CEDULA = [
+export const CCAA_CEDULA: string[] = [
   'Cataluña', 'Navarra', 'Canarias', 'Extremadura',
   'Illes Balears', 'La Rioja', 'Asturias', 'Región de Murcia'
 ]
 
-export const CATALOGO = [
+export const CATALOGO: DefRequisito[] = [
   // ─── INMUEBLE ────────────────────────────────────────────────────────────
   {
     id: 'IN-01',
@@ -61,7 +65,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Normativa autonómica',
     nota: 'Exigible solo en 8 comunidades. Sin cédula vigente el notario no autoriza la escritura.',
-    aplica: (e) => CCAA_CEDULA.includes(e.ccaa)
+    aplica: (e: Expediente) => CCAA_CEDULA.includes(e.ccaa)
   },
   {
     id: 'IN-05',
@@ -73,7 +77,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Art. 9.1.e) Ley de Propiedad Horizontal',
     nota: 'Debe reflejar también las derramas aprobadas y pendientes de pago.',
-    aplica: (e) => !e.unifamiliar
+    aplica: (e: Expediente) => !e.unifamiliar
   },
   {
     id: 'IN-06',
@@ -96,7 +100,12 @@ export const CATALOGO = [
     critico: false,
     referencia: 'RD Leg. 7/2015, art. 29',
     nota: 'Exigible en edificios de más de 45–50 años según ordenanza municipal.',
-    aplica: (e) => !e.obraNueva && e.anioConstruccion && 2026 - e.anioConstruccion >= 45
+    // El umbral de la ITE es la edad del edificio, contada contra el año en
+    // curso: en el POC estaba escrito 2026 a mano.
+    aplica: (e: Expediente) =>
+      !e.obraNueva &&
+      e.anioConstruccion !== null &&
+      new Date().getFullYear() - e.anioConstruccion >= 45
   },
   {
     id: 'IN-08',
@@ -130,7 +139,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Ley 38/1999 de Ordenación de la Edificación',
     nota: 'Incluye el seguro decenal y el certificado final de obra.',
-    aplica: (e) => e.obraNueva
+    aplica: (e: Expediente) => e.obraNueva
   },
 
   // ─── PARTES ──────────────────────────────────────────────────────────────
@@ -166,7 +175,7 @@ export const CATALOGO = [
     critico: false,
     referencia: 'Art. 1259 Código Civil',
     nota: 'El notario de la firma valora la suficiencia del poder; enviarlo con antelación.',
-    aplica: (e) => e.representacion
+    aplica: (e: Expediente) => e.representacion
   },
   {
     id: 'PT-04',
@@ -178,7 +187,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'RD 557/2011, art. 206',
     nota: 'Sin NIE no se puede inscribir la compra ni presentar el modelo 600.',
-    aplica: (e) => e.compradorExtranjero
+    aplica: (e: Expediente) => e.compradorExtranjero
   },
   {
     id: 'PT-05',
@@ -212,7 +221,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Art. 14 Ley Hipotecaria',
     nota: 'La herencia debe estar aceptada, liquidada de ISD e inscrita antes de vender.',
-    aplica: (e) => e.herencia
+    aplica: (e: Expediente) => e.herencia
   },
 
   // ─── FINANCIACIÓN ────────────────────────────────────────────────────────
@@ -226,7 +235,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Art. 10 Ley 5/2019 de Contratos de Crédito Inmobiliario',
     nota: 'Debe entregarse con al menos 10 días naturales de antelación a la firma.',
-    aplica: (e) => e.hipoteca
+    aplica: (e: Expediente) => e.hipoteca
   },
   {
     id: 'FN-02',
@@ -238,7 +247,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Art. 10 Ley 5/2019',
     nota: 'Se entrega junto con la FEIN y el proyecto de escritura.',
-    aplica: (e) => e.hipoteca
+    aplica: (e: Expediente) => e.hipoteca
   },
   {
     id: 'FN-03',
@@ -250,7 +259,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Art. 15 Ley 5/2019',
     nota: 'Se firma como muy tarde el día anterior a la escritura. Sin acta no hay hipoteca.',
-    aplica: (e) => e.hipoteca
+    aplica: (e: Expediente) => e.hipoteca
   },
   {
     id: 'FN-04',
@@ -262,7 +271,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Orden ECO/805/2003',
     nota: 'Validez de 6 meses. Si caduca, el banco exige tasación nueva.',
-    aplica: (e) => e.hipoteca
+    aplica: (e: Expediente) => e.hipoteca
   },
   {
     id: 'FN-05',
@@ -274,7 +283,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Art. 82 Ley Hipotecaria',
     nota: 'Se pide con fecha del día de la firma; el apoderado del banco suele comparecer.',
-    aplica: (e) => e.cargaHipotecaria
+    aplica: (e: Expediente) => e.cargaHipotecaria
   },
 
   // ─── FISCAL Y BLANQUEO ───────────────────────────────────────────────────
@@ -332,7 +341,7 @@ export const CATALOGO = [
     critico: true,
     referencia: 'Art. 25.2 TR Ley IRNR',
     nota: 'Plazo de un mes desde la firma. Sin el 211 el vendedor no recupera el exceso.',
-    aplica: (e) => e.vendedorNoResidente
+    aplica: (e: Expediente) => e.vendedorNoResidente
   },
 
   // ─── NOTARÍA ─────────────────────────────────────────────────────────────
@@ -382,13 +391,14 @@ export const CATALOGO = [
   }
 ]
 
-export const POR_ID = Object.fromEntries(CATALOGO.map((r) => [r.id, r]))
+export const POR_ID: Record<string, DefRequisito> =
+  Object.fromEntries(CATALOGO.map((r) => [r.id, r]))
 
 /** Requisitos que aplican a un expediente concreto, en orden de bloque. */
-export function requisitosDe(expediente) {
+export function requisitosDe(expediente: Expediente): DefRequisito[] {
   return CATALOGO.filter((r) => !r.aplica || r.aplica(expediente))
 }
 
-export function bloqueDe(id) {
+export function bloqueDe(id: string): Bloque | undefined {
   return BLOQUES.find((b) => b.sigla === id.slice(0, 2))
 }

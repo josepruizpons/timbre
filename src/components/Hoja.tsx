@@ -1,12 +1,14 @@
 import { useMemo } from 'react'
-import { waveBand, serial } from '../lib/guilloche.js'
-import { applyFilter } from '../lib/format.js'
+
+import { waveBand, serial } from '../lib/guilloche'
+import { applyFilter } from '../lib/format'
+import type { Campo, Plantilla } from '../types'
 
 const TOKEN = /\{\{([a-zA-Z0-9_]+)(?:\|([a-z]+))?\}\}/g
 
 // Pie de firmas propio de cada tipo de documento. Los que no aparecen aquí no
 // se firman: son solicitudes o comunicaciones.
-const FIRMAS = {
+const FIRMAS: Record<string, string[]> = {
   'PT-05': ['La parte vendedora', 'La parte compradora'],
   'PT-06': ['El cliente', 'Por la agencia'],
   'IN-05': ['El administrador de fincas', 'Sello de la comunidad'],
@@ -14,7 +16,7 @@ const FIRMAS = {
   'PT-03': ['El poderdante', '']
 }
 
-function Onda({ invertida = false }) {
+function Onda({ invertida = false }: { invertida?: boolean }) {
   const trazos = useMemo(
     () =>
       [0, 1, 2].map((i) => ({
@@ -45,11 +47,20 @@ function Onda({ invertida = false }) {
   )
 }
 
+type Segmento =
+  | { tipo: 'texto'; texto: string }
+  | { tipo: 'token'; clave: string; valor: string; etiqueta: string; mirado: boolean }
+
 /** Sustituye los tokens de una línea por sus valores, o por una ranura vacía. */
-function segmentar(linea, valores, campos, mirado) {
-  const salida = []
+function segmentar(
+  linea: string,
+  valores: Record<string, string> | undefined,
+  campos: Campo[] | undefined,
+  mirado: string | null
+): Segmento[] {
+  const salida: Segmento[] = []
   let ultimo = 0
-  let m
+  let m: RegExpExecArray | null
   TOKEN.lastIndex = 0
   while ((m = TOKEN.exec(linea)) !== null) {
     if (m.index > ultimo) salida.push({ tipo: 'texto', texto: linea.slice(ultimo, m.index) })
@@ -72,7 +83,14 @@ function segmentar(linea, valores, campos, mirado) {
   return salida
 }
 
-function Linea({ texto, valores, campos, mirado }) {
+interface LineaProps {
+  texto: string
+  valores: Record<string, string> | undefined
+  campos: Campo[] | undefined
+  mirado: string | null
+}
+
+function Linea({ texto, valores, campos, mirado }: LineaProps) {
   const partes = segmentar(texto, valores, campos, mirado)
   return partes.map((p, i) =>
     p.tipo === 'texto' ? (
@@ -93,7 +111,14 @@ function Linea({ texto, valores, campos, mirado }) {
  * Vista previa del documento sobre papel timbrado. Los campos sin rellenar
  * quedan como ranuras punteadas: el agente ve exactamente qué falta y dónde.
  */
-export default function Hoja({ plantilla, valores, expedienteId = '', campoMirado = null }) {
+interface HojaProps {
+  plantilla: Plantilla | null
+  valores: Record<string, string> | undefined
+  expedienteId?: string
+  campoMirado?: string | null
+}
+
+export default function Hoja({ plantilla, valores, expedienteId = '', campoMirado = null }: HojaProps) {
   const numero = useMemo(
     () => serial(plantilla?.id || 'plt', expedienteId),
     [plantilla?.id, expedienteId]
@@ -102,7 +127,7 @@ export default function Hoja({ plantilla, valores, expedienteId = '', campoMirad
   if (!plantilla) return null
 
   const lineas = plantilla.cuerpo.split('\n')
-  const firmas = FIRMAS[plantilla.requisito]
+  const firmas = plantilla.requisito ? FIRMAS[plantilla.requisito] : undefined
 
   return (
     <article className="hoja">

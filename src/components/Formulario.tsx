@@ -1,12 +1,24 @@
-import { completitud } from '../lib/expediente.js'
+import type { ChangeEvent } from 'react'
 
-function Control({ campo, valor, onChange, onFoco, onSalida }) {
+import { completitud } from '../lib/expediente'
+import type { Campo, Plantilla } from '../types'
+
+interface ControlProps {
+  campo: Campo
+  valor: string | undefined
+  onChange: (clave: string, valor: string) => void
+  onFoco: (clave: string) => void
+  onSalida: () => void
+}
+
+function Control({ campo, valor, onChange, onFoco, onSalida }: ControlProps) {
   const comun = {
     className: 'campo',
     id: `campo-${campo.clave}`,
     value: valor ?? '',
     placeholder: campo.pista || '',
-    onChange: (e) => onChange(campo.clave, e.target.value),
+    onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      onChange(campo.clave, e.target.value),
     onFocus: () => onFoco(campo.clave),
     onBlur: onSalida
   }
@@ -38,8 +50,16 @@ function Control({ campo, valor, onChange, onFoco, onSalida }) {
  * su hueco en la vista previa, de modo que el agente ve el efecto de lo que
  * escribe sin salir del formulario.
  */
-export default function Formulario({ plantilla, valores, onChange, onFoco, onSalida }) {
-  const grupos = []
+interface FormularioProps {
+  plantilla: Plantilla
+  valores: Record<string, string> | undefined
+  onChange: (clave: string, valor: string) => void
+  onFoco: (clave: string) => void
+  onSalida: () => void
+}
+
+export default function Formulario({ plantilla, valores, onChange, onFoco, onSalida }: FormularioProps) {
+  const grupos: { nombre: string; campos: Campo[] }[] = []
   for (const campo of plantilla.campos) {
     const nombre = campo.grupo || 'Datos'
     let g = grupos.find((x) => x.nombre === nombre)

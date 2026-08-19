@@ -1,15 +1,24 @@
 # Timbre
 
-POC de seguimiento de expedientes de compraventa de vivienda para un agente
+Seguimiento de expedientes de compraventa de vivienda para un agente
 inmobiliario, desde la captación hasta la firma ante notario.
+
+React 19 + TypeScript sobre Vite. Es solo el front: los datos viven en
+PostgreSQL detrás de [timbre-api](https://github.com/josepruizpons/timbre-api),
+con el que se habla por sesión en cookie.
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+cp .env.example .env              # VITE_API_HOSTNAME apunta a timbre-api
+
+mkdir certs                       # el dev server va por HTTPS
+mkcert -key-file ./certs/localhost-key.pem -cert-file ./certs/localhost.pem localhost
+
+npm run dev                       # https://localhost:5173
 ```
 
-React 18 + Vite, sin backend. Los datos viven en `localStorage`; el botón
-**Reiniciar muestra** de la barra superior los devuelve a su estado original.
+Hace falta `timbre-api` levantado y con su base de datos sembrada: sin backend
+no pasas del login.
 
 ## Qué hay dentro
 
@@ -26,7 +35,7 @@ React 18 + Vite, sin backend. Los datos viven en `localStorage`; el botón
 
 ## El catálogo de requisitos
 
-`src/data/catalog.js` recoge 31 requisitos reales de una compraventa en España,
+`src/data/catalog.ts` recoge 31 requisitos reales de una compraventa en España,
 cada uno con emisor, responsable, vigencia y referencia normativa. No todos
 aplican a todos los expedientes: el catálogo se filtra por las circunstancias
 del caso, de modo que el número de checks cambia de un expediente a otro.
@@ -71,7 +80,7 @@ Y filtros sobre los campos:
 | --- | --- |
 | `{{precio\|eur}}` | `425.000,00 €` |
 | `{{precio\|letra}}` | `CUATROCIENTOS VEINTICINCO MIL EUROS` |
-| `{{fecha\|fecha}}` | `14 de agosto de 2026` |
+| `{{fecha\|fecha}}` | `14 de agosto de 2026` (fecha en largo) |
 | `{{nombre\|may}}` | Mayúsculas |
 
 Cada campo puede enlazarse con un dato del expediente (`auto`), y así llega
@@ -83,22 +92,28 @@ el documento.
 
 ```
 src/
-  data/catalog.js      requisitos, bloques y reglas de aplicabilidad
-  data/templates.js    plantillas de muestra
-  data/cases.js        10 expedientes (6 activos, 4 en historial)
-  lib/guilloche.js     curvas de guilloche y bandas de onda paramétricas
-  lib/format.js        formato español, incluida la conversión de importes a letra
-  lib/expediente.js    evaluación de estados, caducidades y precarga
+  api.ts               todas las llamadas al backend
+  types.ts             tipos de dominio, espejo de los de timbre-api
+  constants.ts         API_HOSTNAME y enumerados
+  contexts/            app_context: sesión, expedientes y plantillas
+  data/catalog.ts      requisitos, bloques y reglas de aplicabilidad
+  lib/guilloche.ts     curvas de guilloche y bandas de onda paramétricas
+  lib/format.ts        formato español, incluida la conversión de importes a letra
+  lib/expediente.ts    evaluación de estados, caducidades y precarga
   components/          Sello, Casilla, Hoja, Formulario, Panel, Expediente,
-                       Biblioteca, Creador
+                       Biblioteca, Creador, Login
   styles/              tokens y componentes
 ```
+
+Los expedientes, las plantillas y el estado de cada requisito están en
+PostgreSQL. El catálogo no: sus reglas de aplicabilidad son predicados sobre las
+circunstancias del expediente, así que vive en el código.
 
 ## Diseño
 
 La identidad viene de la impresión de seguridad de los documentos oficiales
 españoles. El sello de cada expediente es una roseta de guilloche generada con
-curvas paramétricas reales (`lib/guilloche.js`): sus seis anillos se entintan de
+curvas paramétricas reales (`lib/guilloche.ts`): sus seis anillos se entintan de
 fuera hacia dentro conforme quedan conformes los requisitos, y al llegar al
 pleno el sello se estampa en carmín. Los documentos se componen sobre papel
 timbrado con número de serie y orlas de onda.

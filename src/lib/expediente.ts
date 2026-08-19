@@ -1,17 +1,32 @@
-import { POR_ID, requisitosDe, BLOQUES } from '../data/catalog.js'
-import { addDays, diasHasta, HOY } from './format.js'
-import { AGENTE } from '../data/cases.js'
-import { euros, fechaLarga } from './format.js'
+import { POR_ID, requisitosDe, BLOQUES } from '../data/catalog'
+import { addDays, diasHasta, euros, fechaLarga } from './format'
+import type {
+  Bloque,
+  Campo,
+  Expediente,
+  EstadoEfectivo,
+  Plantilla,
+  RegistroRequisito,
+  RequisitoEvaluado,
+  UserInfo,
+} from '../types'
 
-export const ESTADO_ORDEN = { caducado: 0, caduca: 1, pendiente: 2, curso: 3, vigente: 4 }
+export const ESTADO_ORDEN: Record<string, number> = {
+  caducado: 0, caduca: 1, pendiente: 2, curso: 3, vigente: 4
+}
 
 /**
  * Estado efectivo de un requisito: combina lo marcado por el agente con la
  * caducidad derivada de la fecha de emisión y la vigencia del catálogo.
  */
-export function evaluar(reqId, registro, expediente) {
+export function evaluar(
+  reqId: string,
+  registro: RegistroRequisito | undefined
+): RequisitoEvaluado {
   const def = POR_ID[reqId]
-  const r = registro || { estado: 'pendiente', emitido: null, valores: {}, plantillaId: null }
+  const r: RegistroRequisito = registro ?? {
+    estado: 'pendiente', emitido: null, valores: {}, plantillaId: null, nota: ''
+  }
   const base = {
     id: reqId,
     def,
@@ -19,12 +34,12 @@ export function evaluar(reqId, registro, expediente) {
     valores: r.valores || {},
     nota: r.nota || '',
     emitido: r.emitido || null,
-    caduca: null,
-    dias: null
+    caduca: null as string | null,
+    dias: null as number | null,
   }
 
   if (r.estado !== 'aportado') {
-    return { ...base, estado: r.estado === 'curso' ? 'curso' : 'pendiente' }
+    return { ...base, estado: (r.estado === 'curso' ? 'curso' : 'pendiente') as EstadoEfectivo }
   }
 
   if (!def.vigencia || !r.emitido) {
@@ -36,21 +51,34 @@ export function evaluar(reqId, registro, expediente) {
   // Un documento que caduca después de la firma sigue sirviendo para firmar,
   // pero avisamos igualmente: las firmas se retrasan.
   const umbral = def.vigencia <= 30 ? 7 : 20
-  let estado = 'vigente'
-  if (dias < 0) estado = 'caducado'
+  let estado: EstadoEfectivo = 'vigente'
+  if (dias === null) estado = 'vigente'
+  else if (dias < 0) estado = 'caducado'
   else if (dias <= umbral) estado = 'caduca'
 
   return { ...base, estado, caduca, dias }
 }
 
 /** Todos los requisitos aplicables al expediente, ya evaluados. */
-export function requisitosEvaluados(expediente) {
-  return requisitosDe(expediente).map((def) => evaluar(def.id, expediente.reqs?.[def.id], expediente))
+export function requisitosEvaluados(expediente: Expediente): RequisitoEvaluado[] {
+  return requisitosDe(expediente).map((def) => evaluar(def.id, expediente.reqs?.[def.id]))
 }
 
-export const esConforme = (estado) => estado === 'vigente'
+export const esConforme = (estado: EstadoEfectivo) => estado === 'vigente'
 
-export function resumen(expediente) {
+export interface ResumenExpediente {
+  total: number
+  conformes: number
+  bloqueos: number
+  caducados: number
+  porCaducar: number
+  alertas: number
+  enCurso: number
+  progreso: number
+  reqs: RequisitoEvaluado[]
+}
+
+export function resumen(expediente: Expediente): ResumenExpediente {
   const reqs = requisitosEvaluados(expediente)
   const total = reqs.length
   const conformes = reqs.filter((r) => esConforme(r.estado)).length
@@ -74,7 +102,13 @@ export function resumen(expediente) {
   }
 }
 
-export function porBloque(reqs) {
+export interface BloqueEvaluado extends Bloque {
+  items: RequisitoEvaluado[]
+  conformes: number
+  total: number
+}
+
+export function porBloque(reqs: RequisitoEvaluado[]): BloqueEvaluado[] {
   return BLOQUES.map((b) => {
     const items = reqs.filter((r) => r.id.startsWith(b.sigla))
     return {
@@ -86,8 +120,10 @@ export function porBloque(reqs) {
   }).filter((b) => b.total > 0)
 }
 
+export type ContextoAuto = Record<string, string | number | null>
+
 /** Contexto de autorrelleno que alimenta los campos `auto` de las plantillas. */
-export function contextoDe(expediente) {
+export function contextoDe(expediente: Expediente, agente: UserInfo | null): ContextoAuto {
   return {
     vendedor: expediente.vendedor,
     vendedorNif: expediente.vendedorNif,
@@ -95,7 +131,7 @@ export function contextoDe(expediente) {
     comprador: expediente.comprador,
     compradorNif: expediente.compradorNif,
     compradorEstadoCivil: expediente.compradorEstadoCivil,
-    direccion: `${expediente.direccion}, ${expediente.cp} ${expediente.municipio}`,
+    direccion: `${expediente.direccion}, ${expediente.cp ?? ''} ${expediente.municipio}`.trim(),
     municipio: expediente.municipio,
     provincia: expediente.provincia,
     refCatastral: expediente.refCatastral,
@@ -107,17 +143,28 @@ export function contextoDe(expediente) {
     arras: expediente.arras,
     fechaFirma: expediente.fechaFirma,
     notaria: expediente.notaria,
-    agente: AGENTE.nombre,
-    agencia: AGENTE.agencia,
-    hoy: HOY,
+    // El agente ya no es una constante del código: sale de la sesión.
+    agente: agente?.nombre ?? '',
+    agencia: agente?.agencia.nombre ?? '',
+    hoy: hoyISO(),
     arrasLinea: `Arras por importe de ${euros(expediente.arras)}, entregadas mediante transferencia bancaria a favor de la parte vendedora.`
   }
 }
 
+function hoyISO(): string {
+  const dt = new Date()
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
 /** Valores iniciales de una plantilla para un expediente concreto. */
-export function precargar(plantilla, expediente, valoresPrevios = {}) {
-  const ctx = contextoDe(expediente)
-  const out = {}
+export function precargar(
+  plantilla: Plantilla,
+  expediente: Expediente,
+  agente: UserInfo | null,
+  valoresPrevios: Record<string, string> = {}
+): Record<string, string> {
+  const ctx = contextoDe(expediente, agente)
+  const out: Record<string, string> = {}
   for (const campo of plantilla.campos) {
     if (valoresPrevios[campo.clave] !== undefined && valoresPrevios[campo.clave] !== '') {
       out[campo.clave] = valoresPrevios[campo.clave]
@@ -130,7 +177,18 @@ export function precargar(plantilla, expediente, valoresPrevios = {}) {
   return out
 }
 
-export function completitud(plantilla, valores) {
+export interface Completitud {
+  requeridos: number
+  requeridosListos: number
+  completo: boolean
+  rellenos: number
+  campos: number
+}
+
+export function completitud(
+  plantilla: { campos: Campo[] },
+  valores: Record<string, string> | undefined
+): Completitud {
   const requeridos = plantilla.campos.filter((c) => c.requerido)
   const listos = requeridos.filter((c) => String(valores?.[c.clave] ?? '').trim() !== '')
   const todos = plantilla.campos.filter((c) => String(valores?.[c.clave] ?? '').trim() !== '')
@@ -143,13 +201,11 @@ export function completitud(plantilla, valores) {
   }
 }
 
-export function urgenciaFirma(expediente) {
-  const dias = diasHasta(expediente.fechaFirma)
-  if (dias === null) return null
-  return dias
+export function urgenciaFirma(expediente: Expediente): number | null {
+  return diasHasta(expediente.fechaFirma)
 }
 
-export function etiquetaFirma(expediente) {
+export function etiquetaFirma(expediente: Expediente): string {
   const dias = urgenciaFirma(expediente)
   if (dias === null) return '—'
   if (dias < 0) return `firma vencida hace ${Math.abs(dias)} d`

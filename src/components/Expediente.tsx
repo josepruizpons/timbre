@@ -1,18 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Sello from './Sello.jsx'
-import Casilla from './Casilla.jsx'
-import Hoja from './Hoja.jsx'
-import Formulario from './Formulario.jsx'
+
+import Sello from './Sello'
+import Casilla from './Casilla'
+import Hoja from './Hoja'
+import Formulario from './Formulario'
 import {
   resumen,
   porBloque,
   precargar,
   completitud,
   etiquetaFirma
-} from '../lib/expediente.js'
-import { euros, fechaCorta, fechaLarga, HOY } from '../lib/format.js'
+} from '../lib/expediente'
+import type { BloqueEvaluado, ResumenExpediente } from '../lib/expediente'
+import { euros, fechaCorta, fechaLarga, hoy } from '../lib/format'
+import { useApp } from '../contexts/app_context'
+import type {
+  ActualizarRequisitoDTO,
+  Expediente as ExpedienteType,
+  Plantilla,
+  RequisitoEvaluado,
+} from '../types'
 
-const ROTULO_ESTADO = {
+type ActualizarRequisito = (reqId: string, parche: ActualizarRequisitoDTO) => void
+
+const ROTULO_ESTADO: Record<string, string> = {
   vigente: 'Conforme',
   caduca: 'Caduca pronto',
   caducado: 'Caducado',
@@ -20,7 +31,15 @@ const ROTULO_ESTADO = {
   pendiente: 'Pendiente'
 }
 
-function ListaRequisitos({ bloques, abierto, onAbrir, conformes, total }) {
+interface ListaRequisitosProps {
+  bloques: BloqueEvaluado[]
+  abierto: string | null
+  onAbrir: (id: string) => void
+  conformes: number
+  total: number
+}
+
+function ListaRequisitos({ bloques, abierto, onAbrir, conformes, total }: ListaRequisitosProps) {
   return (
     <nav className="lista" aria-label="Requisitos del expediente">
       <div className="lista__cab">
@@ -56,7 +75,7 @@ function ListaRequisitos({ bloques, abierto, onAbrir, conformes, total }) {
                 <span className="req__pie">
                   <span className="req__sigla">{r.id}</span>
                   {r.estado === 'caducado' && (
-                    <span className="req__aviso es-sello">caducado hace {Math.abs(r.dias)} d</span>
+                    <span className="req__aviso es-sello">caducado hace {Math.abs(r.dias ?? 0)} d</span>
                   )}
                   {r.estado === 'caduca' && (
                     <span className="req__aviso es-ocre">caduca en {r.dias} d</span>
@@ -75,7 +94,14 @@ function ListaRequisitos({ bloques, abierto, onAbrir, conformes, total }) {
   )
 }
 
-function Vista({ exp, res, bloques, onAbrir }) {
+interface VistaProps {
+  exp: ExpedienteType
+  res: ResumenExpediente
+  bloques: BloqueEvaluado[]
+  onAbrir: (id: string) => void
+}
+
+function Vista({ exp, res, bloques, onAbrir }: VistaProps) {
   const alertas = res.reqs.filter((r) => r.estado === 'caducado' || r.estado === 'caduca')
   const bloqueos = res.reqs.filter(
     (r) => r.def.critico && (r.estado === 'pendiente' || r.estado === 'caducado')
@@ -144,7 +170,9 @@ function Vista({ exp, res, bloques, onAbrir }) {
                   {r.id}
                 </button>{' '}
                 {r.def.nombre.toLowerCase()}{' '}
-                {r.dias < 0 ? `caducó hace ${Math.abs(r.dias)} días` : `caduca en ${r.dias} días`}
+                {(r.dias ?? 0) < 0
+                  ? `caducó hace ${Math.abs(r.dias ?? 0)} días`
+                  : `caduca en ${r.dias} días`}
               </span>
             ))}
           </span>
@@ -174,8 +202,8 @@ function Vista({ exp, res, bloques, onAbrir }) {
           <span className="dato silente">abierto {fechaCorta(exp.abierto)}</span>
         </div>
         <div className="traza">
-          {exp.traza.map((t, i) => (
-            <div key={i} className="traza__fila">
+          {exp.traza.map((t) => (
+            <div key={t.id} className="traza__fila">
               <span className="traza__fecha">{fechaCorta(t.fecha)}</span>
               <span>{t.texto}</span>
             </div>
@@ -186,8 +214,17 @@ function Vista({ exp, res, bloques, onAbrir }) {
   )
 }
 
-function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }) {
-  const [campoMirado, setCampoMirado] = useState(null)
+interface RequisitoProps {
+  exp: ExpedienteType
+  req: RequisitoEvaluado
+  plantillas: Plantilla[]
+  onActualizar: ActualizarRequisito
+  onCrearPlantilla: (reqId: string) => void
+}
+
+function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }: RequisitoProps) {
+  const { agente } = useApp()
+  const [campoMirado, setCampoMirado] = useState<string | null>(null)
   const compatibles = plantillas.filter((p) => p.requisito === req.id)
   const elegida = plantillas.find((p) => p.id === req.plantillaId) || null
 
@@ -195,18 +232,18 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }) {
   // del expediente ya puestos: el agente solo escribe lo que falta.
   const valores = useMemo(() => {
     if (!elegida) return {}
-    return Object.keys(req.valores || {}).length ? req.valores : precargar(elegida, exp, {})
-  }, [elegida, req.valores, exp])
+    return Object.keys(req.valores || {}).length ? req.valores : precargar(elegida, exp, agente)
+  }, [elegida, req.valores, exp, agente])
 
-  const elegir = (plt) => {
+  const elegir = (plt: Plantilla) => {
     onActualizar(req.id, {
       plantillaId: plt.id,
-      valores: precargar(plt, exp, req.valores),
+      valores: precargar(plt, exp, agente, req.valores),
       estado: req.estado === 'pendiente' ? 'curso' : undefined
     })
   }
 
-  const cambiar = (clave, valor) => {
+  const cambiar = (clave: string, valor: string) => {
     onActualizar(req.id, { valores: { ...valores, [clave]: valor } })
   }
 
@@ -345,7 +382,7 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }) {
           <div className="seccion__cab">
             <span className="rotulo">Vista previa y campos</span>
             <span className="dato silente">
-              {est.requeridosListos}/{est.requeridos} obligatorios
+              {est!.requeridosListos}/{est!.requeridos} obligatorios
             </span>
           </div>
           <div className="banco">
@@ -370,7 +407,7 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }) {
         <span className="acciones__nota">
           {conforme
             ? `Aportado el ${fechaLarga(req.emitido)}.`
-            : elegida && !est.completo
+            : elegida && est && !est.completo
               ? est.requeridos - est.requeridosListos === 1
                 ? 'Falta 1 campo obligatorio.'
                 : `Faltan ${est.requeridos - est.requeridosListos} campos obligatorios.`
@@ -380,7 +417,7 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }) {
         {elegida && (
           <button
             className="btn"
-            onClick={() => onActualizar(req.id, { valores: precargar(elegida, exp, {}) })}
+            onClick={() => onActualizar(req.id, { valores: precargar(elegida, exp, agente) })}
           >
             Restablecer campos
           </button>
@@ -396,7 +433,7 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }) {
         ) : (
           <button
             className="btn es-principal"
-            onClick={() => onActualizar(req.id, { estado: 'aportado', emitido: HOY })}
+            onClick={() => onActualizar(req.id, { estado: 'aportado', emitido: hoy() })}
           >
             Marcar como aportado
           </button>
@@ -404,6 +441,16 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }) {
       </div>
     </div>
   )
+}
+
+interface ExpedienteProps {
+  exp: ExpedienteType
+  plantillas: Plantilla[]
+  abierto: string | null
+  onAbrirRequisito: (reqId: string) => void
+  onVolver: () => void
+  onActualizar: ActualizarRequisito
+  onCrearPlantilla: (reqId: string) => void
 }
 
 export default function Expediente({
@@ -414,7 +461,7 @@ export default function Expediente({
   onVolver,
   onActualizar,
   onCrearPlantilla
-}) {
+}: ExpedienteProps) {
   const res = useMemo(() => resumen(exp), [exp])
   const bloques = useMemo(() => porBloque(res.reqs), [res.reqs])
   const req = res.reqs.find((r) => r.id === abierto) || null
@@ -442,7 +489,7 @@ export default function Expediente({
       <header className="expcab">
         <div>
           <div className="expcab__ref">
-            <span className="ficha__ref">{exp.id}</span>
+            <span className="ficha__ref">{exp.referencia}</span>
             <span className="marca">{exp.fase}</span>
             {!cerrado && <span className="marca es-tinta">{etiquetaFirma(exp)}</span>}
             {exp.protocolo && <span className="marca es-verde">protocolo {exp.protocolo}</span>}
@@ -472,7 +519,7 @@ export default function Expediente({
             </div>
             <div className="expcab__dato es-ancho">
               <span className="rotulo">Notaría</span>
-              <b>{exp.notaria.split(',')[0]}</b>
+              <b>{exp.notaria?.split(',')[0] ?? '—'}</b>
             </div>
             <div className="expcab__dato es-ancho">
               <span className="rotulo">Referencia catastral</span>
@@ -485,7 +532,7 @@ export default function Expediente({
           <Sello
             progreso={cerrado ? 1 : res.progreso}
             tamano={132}
-            referencia={exp.id}
+            referencia={exp.referencia}
             lugar={exp.municipio}
             estado={exp.estado}
             estampando={estampando}
@@ -519,8 +566,8 @@ export default function Expediente({
               </span>
             </div>
             <div className="traza">
-              {exp.traza.map((t, i) => (
-                <div key={i} className="traza__fila">
+              {exp.traza.map((t) => (
+                <div key={t.id} className="traza__fila">
                   <span className="traza__fecha">{fechaCorta(t.fecha)}</span>
                   <span>{t.texto}</span>
                 </div>

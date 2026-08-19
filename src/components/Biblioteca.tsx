@@ -1,8 +1,15 @@
 import { useState } from 'react'
-import { POR_ID, BLOQUES } from '../data/catalog.js'
-import { fechaCorta } from '../lib/format.js'
+import { POR_ID, BLOQUES } from '../data/catalog'
+import { fechaCorta } from '../lib/format'
+import type { Plantilla } from '../types'
 
-export default function Biblioteca({ plantillas, onCrear, onEditar }) {
+interface BibliotecaProps {
+  plantillas: Plantilla[]
+  onCrear: () => void
+  onEditar: (id: string) => void
+}
+
+export default function Biblioteca({ plantillas, onCrear, onEditar }: BibliotecaProps) {
   const [filtro, setFiltro] = useState('todas')
 
   const lista =
@@ -20,7 +27,7 @@ export default function Biblioteca({ plantillas, onCrear, onEditar }) {
             documento.
           </p>
         </div>
-        <button className="btn es-principal" onClick={() => onCrear(null)}>
+        <button className="btn es-principal" onClick={() => onCrear()}>
           + Crear plantilla
         </button>
       </header>
@@ -51,7 +58,7 @@ export default function Biblioteca({ plantillas, onCrear, onEditar }) {
 
       <div className="biblioteca">
         {lista.map((p) => {
-          const req = POR_ID[p.requisito]
+          const req = p.requisito ? POR_ID[p.requisito] : undefined
           return (
             <article key={p.id} className="tarjeta-plt">
               <div className="tarjeta-plt__cuerpo">

@@ -10,8 +10,18 @@
  *   y = A·sin t − B·sin(n t)
  * Produces n+1 lobes of amplitude B around a circle of radius A.
  */
-export function rosette({ radius, amplitude, lobes, samples = 360, cx = 0, cy = 0, phase = 0 }) {
-  const pts = []
+export interface RosetteSpec {
+  radius: number
+  amplitude: number
+  lobes: number
+  samples?: number
+  cx?: number
+  cy?: number
+  phase?: number
+}
+
+export function rosette({ radius, amplitude, lobes, samples = 360, cx = 0, cy = 0, phase = 0 }: RosetteSpec): string {
+  const pts: string[] = []
   for (let i = 0; i <= samples; i++) {
     const t = (i / samples) * Math.PI * 2 + phase
     const x = cx + radius * Math.cos(t) + amplitude * Math.cos(lobes * t)
@@ -35,7 +45,9 @@ const RING_SPEC = [
 
 export const RING_COUNT = RING_SPEC.length
 
-export function sealRings(detail = 'full') {
+export type SealDetail = 'full' | 'compact'
+
+export function sealRings(detail: SealDetail = 'full'): { d: string; key: string }[] {
   const samples = detail === 'compact' ? 120 : 480
   const spec = detail === 'compact' ? RING_SPEC.filter((_, i) => i % 2 === 0 || i === 1) : RING_SPEC
   return spec.map((r, i) => ({
@@ -48,8 +60,16 @@ export function sealRings(detail = 'full') {
  * Wave band used along the head and foot of a document sheet — the same
  * device that runs across the top of stamped paper.
  */
-export function waveBand({ width, height, cycles, phase = 0, samples = 240 }) {
-  const pts = []
+export interface WaveBandSpec {
+  width: number
+  height: number
+  cycles: number
+  phase?: number
+  samples?: number
+}
+
+export function waveBand({ width, height, cycles, phase = 0, samples = 240 }: WaveBandSpec): string {
+  const pts: string[] = []
   const mid = height / 2
   const amp = height / 2 - 0.5
   for (let i = 0; i <= samples; i++) {
@@ -62,7 +82,7 @@ export function waveBand({ width, height, cycles, phase = 0, samples = 240 }) {
 }
 
 /** Deterministic stamped-paper serial, so a given sheet always reads the same. */
-export function serial(...seed) {
+export function serial(...seed: (string | number)[]): string {
   const s = seed.join('·')
   let h = 2166136261
   for (let i = 0; i < s.length; i++) {
