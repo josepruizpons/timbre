@@ -1,0 +1,177 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TIMBRE — sistema de diseño
+   La paleta procede de la impresión de seguridad española: tinta prusia de
+   grabado, verde de fondo registral, carmín del sello notarial, ocre del
+   timbre del Estado y el gris salvia de las carpetas de archivo.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* — Color ————————————————————————————————————————————————————— */
+  --tinta: #101e2e;
+  --tinta-80: #35455a;
+  --tinta-60: #5d6e77;
+  --grafito: #6f7d83;
+  --linea: #c2cec8;
+  --linea-suave: #d6dfd9;
+  --papel: #f8f9f7;
+  --papel-hueco: #eef2ee;
+  --carpeta: #dbe2dd;
+  --carpeta-honda: #ccd6cf;
+
+  --registro: #0e6f5c;
+  --registro-honda: #0a4f42;
+  --registro-tenue: #cadfd6;
+  --registro-vapor: #e5efea;
+
+  --sello: #a81f35;
+  --sello-tenue: #f0d7db;
+
+  --timbre: #8a6a12;
+  --timbre-tenue: #f0e6cb;
+
+  /* — Tipografía ————————————————————————————————————————————————— */
+  --display: 'Archivo', 'Helvetica Neue', sans-serif;
+  --texto: 'Alegreya Sans', 'Segoe UI', sans-serif;
+  --dato: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --fs-hero: clamp(1.9rem, 3.4vw, 2.6rem);
+  --fs-h1: clamp(1.35rem, 2.2vw, 1.7rem);
+  --fs-h2: 1.08rem;
+  --fs-body: 0.98rem;
+  --fs-sm: 0.86rem;
+  --fs-xs: 0.775rem;
+  --fs-micro: 0.685rem;
+
+  /* — Métrica ———————————————————————————————————————————————————— */
+  --r: 2px;
+  --barra: 54px;
+  --gap: 20px;
+  --ancho: 1440px;
+  --sombra: 0 1px 0 rgba(16, 30, 46, 0.06), 0 6px 18px -14px rgba(16, 30, 46, 0.45);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--carpeta);
+  color: var(--tinta);
+  font-family: var(--texto);
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+a {
+  color: var(--registro);
+}
+
+:focus-visible {
+  outline: 2px solid var(--registro);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+::selection {
+  background: var(--registro-tenue);
+}
+
+/* — Primitivas tipográficas ————————————————————————————————————————— */
+
+.rotulo {
+  font-family: var(--display);
+  font-variation-settings: 'wdth' 108, 'wght' 600;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--grafito);
+}
+
+.titular {
+  font-family: var(--display);
+  font-variation-settings: 'wdth' 112, 'wght' 700;
+  letter-spacing: -0.012em;
+  line-height: 1.12;
+  color: var(--tinta);
+}
+
+.dato {
+  font-family: var(--dato);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.sigla {
+  font-family: var(--dato);
+  font-weight: 500;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  color: var(--grafito);
+}
+
+.silente {
+  color: var(--tinta-60);
+}
+
+.vsr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
