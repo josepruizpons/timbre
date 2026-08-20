@@ -105,6 +105,40 @@ export function aplicarMarca(marca: Pick<Marca, 'colorAcento'> | null): void {
   raiz.setProperty('--acento-contra', p.acentoContra)
 }
 
+/**
+ * Distancia perceptual «redmean»: aproximación barata y bien conocida a la
+ * diferencia que ve el ojo entre dos colores. Por debajo de ~130 dos tintas
+ * empiezan a confundirse a tamaño de distintivo.
+ */
+function distancia(a: string, b: string): number {
+  const x = aRgb(a)
+  const y = aRgb(b)
+  if (!x || !y) return Infinity
+  const rojoMedio = (x.r + y.r) / 2
+  const dr = x.r - y.r
+  const dg = x.g - y.g
+  const db = x.b - y.b
+  return Math.sqrt(
+    (2 + rojoMedio / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rojoMedio) / 256) * db * db
+  )
+}
+
+const SELLO = '#a81f35'
+const TIMBRE = '#8a6a12'
+const CONFUSION = 130
+
+/**
+ * Avisa si el acento elegido se confunde con una de las dos tintas semánticas.
+ * No lo impide —el color es de la agencia— pero un acento carmín hace que el
+ * distintivo de «conformes» y el de «caducado» se lean igual.
+ */
+export function chocaConSemantico(hex: string): 'sello' | 'timbre' | null {
+  const aSello = distancia(hex, SELLO)
+  const aTimbre = distancia(hex, TIMBRE)
+  if (aSello >= CONFUSION && aTimbre >= CONFUSION) return null
+  return aSello <= aTimbre ? 'sello' : 'timbre'
+}
+
 /** Iniciales para el sello de la agencia cuando no hay logotipo. */
 export function iniciales(nombre: string): string {
   const palabras = nombre
@@ -117,13 +151,17 @@ export function iniciales(nombre: string): string {
 }
 
 /** Paleta sugerida en Ajustes: acentos que funcionan sobre este papel. */
+/**
+ * Los ocho sugeridos están elegidos por distancia al carmín y al ocre: ninguno
+ * se confunde con ellos. Quien quiera otro lo escribe, y si choca se le avisa.
+ */
 export const ACENTOS_SUGERIDOS: { hex: string; nombre: string }[] = [
   { hex: '#0e6f5c', nombre: 'Verde registral' },
-  { hex: '#1d4f8c', nombre: 'Azul de escritura' },
-  { hex: '#7a2f6d', nombre: 'Violeta de tampón' },
   { hex: '#0b6a72', nombre: 'Cardenillo' },
-  { hex: '#8a4b12', nombre: 'Sepia de archivo' },
+  { hex: '#116b6b', nombre: 'Turquesa hondo' },
+  { hex: '#1d4f8c', nombre: 'Azul de escritura' },
+  { hex: '#274a7a', nombre: 'Añil de expediente' },
+  { hex: '#4a2d5c', nombre: 'Berenjena' },
   { hex: '#2f5d2a', nombre: 'Verde catastral' },
-  { hex: '#a81f35', nombre: 'Carmín notarial' },
   { hex: '#33404d', nombre: 'Grafito' },
 ]

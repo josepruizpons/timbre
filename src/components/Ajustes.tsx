@@ -5,7 +5,7 @@ import { Apartado, CampoTexto } from './ui/Campos'
 import * as api from '../api'
 import { ApiError } from '../api'
 import { useApp } from '../contexts/app_context'
-import { ACENTOS_SUGERIDOS, aplicarMarca, iniciales, paletaDe } from '../lib/marca'
+import { ACENTOS_SUGERIDOS, aplicarMarca, chocaConSemantico, iniciales, paletaDe } from '../lib/marca'
 
 function Perfil() {
   const { agente, avisar, refrescarPerfil } = useApp()
@@ -165,6 +165,7 @@ function MarcaAgencia() {
   }
 
   const paleta = paletaDe(valido ? color : '#0e6f5c')
+  const choque = valido ? chocaConSemantico(color) : null
 
   return (
     <form className="tarjeta es-ancha" onSubmit={enviar} noValidate>
@@ -253,6 +254,18 @@ function MarcaAgencia() {
           <p className="campo-fila__error">
             Escribe el color en formato #rrggbb, por ejemplo #1d4f8c.
           </p>
+        )}
+
+        {choque && (
+          <div className={`aviso ${choque === 'sello' ? 'es-sello' : ''}`} style={{ margin: '14px 0 0' }}>
+            <span className="aviso__rotulo">Se confunde</span>
+            <span>
+              {choque === 'sello'
+                ? 'Este acento se parece demasiado al carmín de «caducado»: el distintivo de un requisito conforme y el de uno vencido se leerán igual.'
+                : 'Este acento se parece demasiado al ocre de «caduca pronto»: el distintivo de un requisito conforme y el de uno a punto de vencer se leerán igual.'}{' '}
+              Puedes guardarlo igualmente, pero mira antes la vista previa de aquí arriba.
+            </span>
+          </div>
         )}
       </section>
 

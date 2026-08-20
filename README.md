@@ -160,6 +160,12 @@ Lo que **no** se deriva de ahí es el carmín `#A81F35` de «caducado» y el ocr
 `#8A6A12` de «caduca pronto». Son semánticos: una agencia puede trabajar en el
 color que quiera, pero un documento vencido tiene que verse vencido.
 
+De ahí sale una consecuencia: un acento carmín haría que el distintivo de
+«conformes» y el de «caducado» se leyeran igual. Los ocho colores sugeridos
+están elegidos por distancia perceptual a esas dos tintas, y si escribes un
+hexadecimal que se les acerca demasiado, Ajustes te lo dice —sin impedírtelo, y
+con la vista previa delante para que lo juzgues tú.
+
 ## Aviso
 
 Los textos legales son de muestra para el prototipo, no asesoramiento jurídico.
