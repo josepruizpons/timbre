@@ -402,3 +402,49 @@ export function requisitosDe(expediente: Expediente): DefRequisito[] {
 export function bloqueDe(id: string): Bloque | undefined {
   return BLOQUES.find((b) => b.sigla === id.slice(0, 2))
 }
+
+// Las comunidades se eligen de una lista cerrada porque `CCAA_CEDULA` compara
+// cadenas exactas: escrita a mano, «Illes Balears» como «Baleares» dejaría el
+// expediente sin el requisito de cédula de habitabilidad.
+export const CCAA: string[] = [
+  'Andalucía', 'Aragón', 'Asturias', 'Canarias', 'Cantabria', 'Castilla-La Mancha',
+  'Castilla y León', 'Cataluña', 'Comunidad de Madrid', 'Comunitat Valenciana',
+  'Extremadura', 'Galicia', 'Illes Balears', 'La Rioja', 'Navarra', 'País Vasco',
+  'Región de Murcia', 'Ceuta', 'Melilla'
+]
+
+export const ESTADOS_CIVILES: string[] = [
+  'Soltero/a',
+  'Casado/a en gananciales',
+  'Casado/a en separación de bienes',
+  'Pareja de hecho',
+  'Separado/a',
+  'Divorciado/a',
+  'Viudo/a'
+]
+
+/**
+ * Las circunstancias del expediente, con el efecto que tiene marcarlas. No son
+ * casillas decorativas: cada una abre o cierra requisitos del catálogo, así que
+ * el formulario dice cuál.
+ */
+export const CIRCUNSTANCIAS: { clave: string; etiqueta: string; efecto: string }[] = [
+  { clave: 'hipoteca', etiqueta: 'El comprador financia con hipoteca', efecto: 'Añade FEIN, FiAE y acta de transparencia.' },
+  { clave: 'cargaHipotecaria', etiqueta: 'La finca tiene hipoteca del vendedor', efecto: 'Añade certificado de saldo y carta de cancelación.' },
+  { clave: 'obraNueva', etiqueta: 'Obra nueva o primera transmisión', efecto: 'Quita la ITE y añade el libro del edificio.' },
+  { clave: 'unifamiliar', etiqueta: 'Vivienda unifamiliar', efecto: 'Quita el certificado de deuda cero con la comunidad.' },
+  { clave: 'herencia', etiqueta: 'El vendedor adquirió por herencia', efecto: 'Añade la escritura de aceptación y el impuesto de sucesiones.' },
+  { clave: 'representacion', etiqueta: 'Alguna parte firma por poder', efecto: 'Añade la escritura de poder y su bastanteo.' },
+  { clave: 'compradorExtranjero', etiqueta: 'Comprador extranjero', efecto: 'Añade NIE y, en su caso, declaración de inversión.' },
+  { clave: 'vendedorNoResidente', etiqueta: 'Vendedor no residente', efecto: 'Añade la retención del 3 % y el modelo 211.' }
+]
+
+export const FASES: string[] = [
+  'En preparación',
+  'Documentación en curso',
+  'Pendiente de arras',
+  'Arras firmadas',
+  'Pendiente de tasación',
+  'Preparando notaría',
+  'Lista para firma'
+]

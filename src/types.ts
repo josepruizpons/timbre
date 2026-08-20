@@ -47,6 +47,10 @@ export interface EntradaTraza {
   id: number
   fecha: string
   texto: string
+  /** Escrita por la aplicación al cambiar el expediente de estado. */
+  automatica: boolean
+  /** Nombre del agente que la escribió, o `null` si fue la aplicación. */
+  autor: string | null
 }
 
 export interface Expediente {
@@ -129,16 +133,79 @@ export interface RequisitoEvaluado {
   dias: number | null
 }
 
+export type Rol = 'admin' | 'agente'
+
+/** Lo que una agencia puede cambiar de su propia interfaz. */
+export interface Marca {
+  nombre: string
+  nombreCorto: string | null
+  lema: string | null
+  /** Hexadecimal `#rrggbb`. Gobierna el color de acción de toda la interfaz. */
+  colorAcento: string
+  logoUrl: string | null
+}
+
+export interface Agencia extends Marca {
+  id: number
+}
+
 export interface UserInfo {
   id: number
   email: string
   nombre: string
   colegiado: string | null
-  agencia: {
-    id: number
-    nombre: string
-  }
+  telefono: string | null
+  rol: Rol
+  agencia: Agencia
 }
+
+/** Ficha de usuario que ve el administrador de la agencia. */
+export interface Usuario {
+  id: number
+  email: string
+  nombre: string
+  colegiado: string | null
+  telefono: string | null
+  rol: Rol
+  activo: boolean
+  ultimoAcceso: string | null
+  creado: string | null
+  expedientes: number
+}
+
+export interface CrearUsuarioDTO {
+  email: string
+  nombre: string
+  password: string
+  colegiado?: string | null
+  telefono?: string | null
+  rol?: Rol
+}
+
+export interface ActualizarUsuarioDTO {
+  email?: string
+  nombre?: string
+  colegiado?: string | null
+  telefono?: string | null
+  rol?: Rol
+  activo?: boolean
+  password?: string
+}
+
+/** Campos del expediente que el formulario de alta y edición escribe. */
+export type ExpedienteDTO = Partial<
+  Pick<
+    Expediente,
+    | 'estado' | 'fase'
+    | 'direccion' | 'municipio' | 'provincia' | 'ccaa' | 'cp'
+    | 'refCatastral' | 'fincaRegistral' | 'registro' | 'superficie' | 'anioConstruccion'
+    | 'vendedor' | 'vendedorNif' | 'vendedorEstadoCivil'
+    | 'comprador' | 'compradorNif' | 'compradorEstadoCivil'
+    | 'precio' | 'arras' | 'fechaFirma' | 'notaria' | 'protocolo' | 'cerrado'
+    | 'hipoteca' | 'cargaHipotecaria' | 'compradorExtranjero' | 'vendedorNoResidente'
+    | 'obraNueva' | 'herencia' | 'representacion' | 'unifamiliar'
+  >
+>
 
 export interface ActualizarRequisitoDTO {
   estado?: EstadoRequisito

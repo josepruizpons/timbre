@@ -1,35 +1,64 @@
 /* ══════════════════════════════════════════════════════════════════════════
    TIMBRE — sistema de diseño
-   La paleta procede de la impresión de seguridad española: tinta prusia de
-   grabado, verde de fondo registral, carmín del sello notarial, ocre del
-   timbre del Estado y el gris salvia de las carpetas de archivo.
+
+   El modelo es el papel timbrado: un margen impreso a la izquierda, oscuro y
+   estrecho, con la referencia corriendo en vertical; y a su derecha la hoja,
+   clara, donde se trabaja. La aplicación entera es ese par —margen y hoja—, y
+   la navegación vive en el margen porque en el papel es donde vive la
+   referencia.
+
+   El acento (--acento y sus derivados) lo elige cada agencia desde Ajustes y lo
+   escribe `lib/marca.ts` sobre :root al arrancar. Lo que hay aquí abajo son los
+   valores de reserva mientras se carga la sesión.
+
+   El carmín (--sello) y el ocre (--timbre) NO son configurables: significan
+   «caducado» y «caduca pronto». Una agencia puede tener el color que quiera,
+   pero un documento vencido tiene que verse vencido.
    ═════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* — Color ————————————————————————————————————————————————————— */
+  /* — Tintas ————————————————————————————————————————————————————— */
   --tinta: #101e2e;
   --tinta-80: #35455a;
   --tinta-60: #5d6e77;
   --grafito: #6f7d83;
   --linea: #c2cec8;
   --linea-suave: #d6dfd9;
-  --papel: #f8f9f7;
+
+  /* — Papel y carpeta ———————————————————————————————————————————— */
+  --papel: #f5f7f4;
   --papel-hueco: #eef2ee;
   --carpeta: #dbe2dd;
   --carpeta-honda: #ccd6cf;
 
-  --registro: #0e6f5c;
-  --registro-honda: #0a4f42;
-  --registro-tenue: #cadfd6;
-  --registro-vapor: #e5efea;
+  /* — Margen timbrado ————————————————————————————————————————————
+     El margen es el único plano oscuro de la aplicación. Todo lo que se apoya
+     en él tiene su propio juego de tintas, porque las de la hoja no se leen. */
+  --margen: #16232e;
+  --margen-alto: #223444;
+  --margen-tinta: #d6e0e4;
+  --margen-tenue: #7d909c;
 
+  /* — Acento (marca blanca) —————————————————————————————————————— */
+  --acento: #0e6f5c;
+  --acento-honda: #0a5044;
+  --acento-tenue: #c3dbd3;
+  --acento-vapor: #e5efea;
+  --acento-texto: #0b5648;
+  --acento-claro: #4fb39c;
+  --acento-contra: #ffffff;
+
+  /* — Tintas semánticas (fijas) —————————————————————————————————— */
   --sello: #a81f35;
   --sello-tenue: #f0d7db;
-
+  --sello-claro: #e0808f;
   --timbre: #8a6a12;
   --timbre-tenue: #f0e6cb;
 
-  /* — Tipografía ————————————————————————————————————————————————— */
+  /* — Tipografía ————————————————————————————————————————————————
+     Archivo es variable en anchura además de en peso, y esa es la única
+     articulación tipográfica de la interfaz: 62 para lo estampado en el
+     margen, 112 para los titulares. No hay una tercera familia de display. */
   --display: 'Archivo', 'Helvetica Neue', sans-serif;
   --texto: 'Alegreya Sans', 'Segoe UI', sans-serif;
   --dato: 'IBM Plex Mono', ui-monospace, monospace;
@@ -44,10 +73,11 @@
 
   /* — Métrica ———————————————————————————————————————————————————— */
   --r: 2px;
-  --barra: 54px;
+  --margen-ancho: 66px;
   --gap: 20px;
   --ancho: 1440px;
   --sombra: 0 1px 0 rgba(16, 30, 46, 0.06), 0 6px 18px -14px rgba(16, 30, 46, 0.45);
+  --sombra-alta: 0 24px 60px -28px rgba(16, 30, 46, 0.55), 0 2px 8px -4px rgba(16, 30, 46, 0.25);
 }
 
 *,
@@ -106,17 +136,17 @@ button {
 }
 
 a {
-  color: var(--registro);
+  color: var(--acento-texto);
 }
 
 :focus-visible {
-  outline: 2px solid var(--registro);
+  outline: 2px solid var(--acento);
   outline-offset: 2px;
   border-radius: 1px;
 }
 
 ::selection {
-  background: var(--registro-tenue);
+  background: var(--acento-tenue);
 }
 
 /* — Primitivas tipográficas ————————————————————————————————————————— */
@@ -136,6 +166,15 @@ a {
   letter-spacing: -0.012em;
   line-height: 1.12;
   color: var(--tinta);
+}
+
+/* Estampado: la anchura mínima de Archivo, como el texto impreso en el filo
+   del papel timbrado. Solo se usa en el margen y en las siglas de folio. */
+.estampado {
+  font-family: var(--display);
+  font-variation-settings: 'wdth' 62, 'wght' 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .dato {

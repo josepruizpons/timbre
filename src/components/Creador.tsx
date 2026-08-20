@@ -313,7 +313,7 @@ export default function Creador({ plantillaBase, requisitoSugerido, expedienteMu
               <div key={i} className="campo-editor">
                 <div className="campo-editor__cab">
                   <span className="campo-editor__idx">{String(i + 1).padStart(2, '0')}</span>
-                  <code className="sigla" style={{ color: 'var(--registro)' }}>
+                  <code className="sigla" style={{ color: 'var(--acento)' }}>
                     {`{{${c.clave || '…'}}}`}
                   </code>
                   <div className="campo-editor__mando">

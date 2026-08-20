@@ -22,16 +22,28 @@ no pasas del login.
 
 ## Qué hay dentro
 
-- **Panel de expedientes** — activos e historial, con los contadores que
-  gobiernan el día de un agente: requisitos por cerrar, documentos que caducan,
-  documentos ya caducados y días hasta la firma más próxima.
+- **Cartera** — activos e historial en un registro foliado, encabezado por la
+  regleta: una sola barra con todos los requisitos de la cartera repartidos por
+  estado, porque lo que se mira es la proporción, no cuatro cifras sueltas.
+- **Alta y edición de expedientes** — la finca, las partes, la operación y las
+  circunstancias. Cada circunstancia dice al lado qué requisitos abre o cierra,
+  y el pie del formulario cuenta cuántos habrá antes de guardar.
 - **Ficha de expediente** — el catálogo de requisitos aplicable a ese caso
   concreto, agrupado por bloques y presentado como checks.
 - **Requisito** — base legal, quién lo emite, quién lo aporta y su vigencia;
   selección de plantilla, vista previa del documento sobre papel timbrado y
   formulario de campos enlazado con la vista previa.
 - **Creador de plantillas** — editor de campos y de cuerpo con tokens, y vista
-  previa en vivo contra un expediente real.
+  previa en vivo contra un expediente real. Duplicar versiona sin tocar lo que
+  ya usan los expedientes firmados.
+- **Traza** — histórico y auditoría a la vez: lo que anota el agente va firmado
+  con su nombre y se puede borrar; lo que escribe la aplicación al cambiar de
+  estado queda marcado y no.
+- **Equipo** (administradores) — alta, edición, cambio de rol y baja. Dar de
+  baja no borra la fila: los expedientes y las anotaciones siguen apuntando a
+  esa persona.
+- **Ajustes** — la ficha propia, la contraseña y, para administradores, la marca
+  de la agencia.
 
 ## El catálogo de requisitos
 
@@ -95,13 +107,16 @@ src/
   api.ts               todas las llamadas al backend
   types.ts             tipos de dominio, espejo de los de timbre-api
   constants.ts         API_HOSTNAME y enumerados
-  contexts/            app_context: sesión, expedientes y plantillas
+  contexts/            app_context: sesión, expedientes, plantillas y avisos
+  lib/marca.ts         del color de la agencia salen los seis tonos de la interfaz
   data/catalog.ts      requisitos, bloques y reglas de aplicabilidad
   lib/guilloche.ts     curvas de guilloche y bandas de onda paramétricas
   lib/format.ts        formato español, incluida la conversión de importes a letra
   lib/expediente.ts    evaluación de estados, caducidades y precarga
-  components/          Sello, Casilla, Hoja, Formulario, Panel, Expediente,
-                       Biblioteca, Creador, Login
+  components/          Sello, Casilla, Hoja, Formulario, Margen, Panel,
+                       Expediente, ExpedienteForm, Biblioteca, Creador,
+                       Usuarios, Ajustes, Login, ErrorBoundary
+  components/ui/       Modal, Avisos, Confirmar, Campos
   styles/              tokens y componentes
 ```
 
@@ -111,18 +126,39 @@ circunstancias del expediente, así que vive en el código.
 
 ## Diseño
 
-La identidad viene de la impresión de seguridad de los documentos oficiales
-españoles. El sello de cada expediente es una roseta de guilloche generada con
-curvas paramétricas reales (`lib/guilloche.ts`): sus seis anillos se entintan de
-fuera hacia dentro conforme quedan conformes los requisitos, y al llegar al
-pleno el sello se estampa en carmín. Los documentos se componen sobre papel
-timbrado con número de serie y orlas de onda.
+El modelo es el papel timbrado: un margen impreso a la izquierda, oscuro y
+estrecho, con la referencia corriendo en vertical; y a su derecha la hoja, donde
+se trabaja. La aplicación entera es ese par. La navegación vive en el margen
+porque en el papel es donde vive la referencia, y el margen sigue llevando
+estampado en vertical el nombre de la agencia.
 
-Paleta: tinta prusia `#101E2E`, salvia de archivo `#DBE2DD`, papel `#F8F9F7`,
-verde de fondo registral `#0E6F5C`, carmín de sello `#A81F35` y ocre de timbre
-`#8A6A12`. El carmín queda reservado a lo que ya ha caducado o bloquea la firma.
-Tipografías: Archivo para títulos, Alegreya Sans para texto y IBM Plex Mono para
-referencias y cifras.
+Tres planos y siempre en el mismo orden: el margen oscuro `#16232E`, el pliego
+de carpeta `#DBE2DD` y el papel de las fichas `#F5F7F4`. Sobre el papel, tinta
+prusia `#101E2E`.
+
+El sello de cada expediente es una roseta de guilloche generada con curvas
+paramétricas reales (`lib/guilloche.ts`): sus seis anillos se entintan de fuera
+hacia dentro conforme quedan conformes los requisitos, y al llegar al pleno el
+sello se estampa en carmín. Los documentos se componen sobre papel timbrado con
+número de serie y orlas de onda.
+
+Tipografías: Archivo, Alegreya Sans e IBM Plex Mono. Archivo es variable en
+anchura además de en peso, y esa es la única articulación tipográfica de la
+interfaz: `wdth 62` para lo estampado en el margen, `wdth 112` para los
+titulares. No hay una segunda familia de display.
+
+### Marca blanca
+
+Cada agencia elige un color de acento desde Ajustes. De ese único hexadecimal
+`lib/marca.ts` deriva los seis tonos que necesita la interfaz —acción, pulsado,
+dos rellenos, la variante legible sobre papel y la legible sobre el margen
+oscuro— y los escribe como variables CSS en `:root`. El cálculo del contraste
+usa luminancia relativa de la WCAG, así que un acento muy claro se oscurece para
+poder leerse como texto y uno muy oscuro se aclara para verse en el margen.
+
+Lo que **no** se deriva de ahí es el carmín `#A81F35` de «caducado» y el ocre
+`#8A6A12` de «caduca pronto». Son semánticos: una agencia puede trabajar en el
+color que quiera, pero un documento vencido tiene que verse vencido.
 
 ## Aviso
 

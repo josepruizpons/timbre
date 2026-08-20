@@ -71,6 +71,17 @@ predicados (`aplica: (e) => e.hipoteca`). La base de datos solo guarda el estado
 de cada requisito, con `req_id` (`IN-01`) como clave. Si cambian los requisitos,
 se cambia aquí.
 
+## Marca blanca: nunca escribas un color de acción a mano
+
+Todo el color de acción sale de `--acento` y sus derivados, que `lib/marca.ts`
+escribe en `:root` con la paleta de la agencia. En el CSS solo hay
+`var(--acento)`, `var(--acento-honda)`, `var(--acento-tenue)`,
+`var(--acento-vapor)`, `var(--acento-texto)`, `var(--acento-claro)` y
+`var(--acento-contra)`.
+
+`--sello` (carmín) y `--timbre` (ocre) sí son fijos: significan «caducado» y
+«caduca pronto». No los uses para nada decorativo, y no los hagas configurables.
+
 ## No formatter
 
 No hay Prettier ni `.editorconfig`. ESLint es la única herramienta de estilo.

@@ -38,7 +38,7 @@ function Onda({ invertida = false }: { invertida?: boolean }) {
           key={i}
           d={t.d}
           fill="none"
-          stroke="var(--registro)"
+          stroke="var(--acento)"
           strokeWidth="0.5"
           opacity={t.o}
         />

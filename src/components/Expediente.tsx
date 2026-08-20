@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 
 import Sello from './Sello'
 import Casilla from './Casilla'
 import Hoja from './Hoja'
 import Formulario from './Formulario'
+import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
 import {
   resumen,
   porBloque,
@@ -16,6 +17,7 @@ import { euros, fechaCorta, fechaLarga, hoy } from '../lib/format'
 import { useApp } from '../contexts/app_context'
 import type {
   ActualizarRequisitoDTO,
+  EstadoExpediente,
   Expediente as ExpedienteType,
   Plantilla,
   RequisitoEvaluado,
@@ -91,6 +93,109 @@ function ListaRequisitos({ bloques, abierto, onAbrir, conformes, total }: ListaR
         </div>
       ))}
     </nav>
+  )
+}
+
+
+/**
+ * La traza es el histórico del expediente y a la vez su registro de auditoría:
+ * lo que escribe la aplicación al cambiar de estado queda marcado y no se borra;
+ * lo que teclea el agente sí.
+ */
+function Traza({ exp, rango }: { exp: ExpedienteType; rango: string }) {
+  const { anadirTraza, borrarTraza } = useApp()
+  const [texto, setTexto] = useState('')
+  const [fecha, setFecha] = useState(hoy())
+  const [enviando, setEnviando] = useState(false)
+  const [confirmar, setConfirmar] = useState<PeticionConfirmar | null>(null)
+
+  const enviar = async (e: FormEvent) => {
+    e.preventDefault()
+    if (enviando || !texto.trim()) return
+    setEnviando(true)
+    try {
+      await anadirTraza(exp.id, texto.trim(), fecha)
+      setTexto('')
+      setFecha(hoy())
+    } catch {
+      // El aviso lo pone el contexto; lo escrito se queda para reintentar.
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <section className="seccion">
+      <div className="seccion__cab">
+        <span className="rotulo">Traza del expediente</span>
+        <span className="dato silente">{rango}</span>
+      </div>
+
+      <form className="anota" onSubmit={enviar}>
+        <input
+          className="campo anota__fecha dato"
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          aria-label="Fecha de la anotación"
+        />
+        <input
+          className="campo anota__texto"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          placeholder="Anota lo que ha pasado: llamada, documento pedido, visita…"
+          aria-label="Texto de la anotación"
+          maxLength={2000}
+        />
+        <button className="btn es-principal" type="submit" disabled={enviando || !texto.trim()}>
+          {enviando ? 'Anotando…' : 'Anotar'}
+        </button>
+      </form>
+
+      {exp.traza.length === 0 ? (
+        <p className="traza__vacia silente">
+          Sin anotaciones todavía. Lo que escribas aquí queda fechado y firmado con tu nombre.
+        </p>
+      ) : (
+        <div className="traza">
+          {exp.traza.map((t) => (
+            <div key={t.id} className={`traza__fila${t.automatica ? ' es-automatica' : ''}`}>
+              <span className="traza__fecha">{fechaCorta(t.fecha)}</span>
+              <span className="traza__texto">
+                {t.texto}
+                {t.autor && !t.automatica && <span className="traza__autor">{t.autor}</span>}
+              </span>
+              {t.automatica ? (
+                <span className="traza__auto" title="Anotación de la aplicación">
+                  auto
+                </span>
+              ) : (
+                <button
+                  className="traza__borrar"
+                  aria-label="Borrar anotación"
+                  title="Borrar anotación"
+                  onClick={() =>
+                    setConfirmar({
+                      titulo: 'Borrar la anotación',
+                      cuerpo: `«${t.texto}» desaparecerá de la traza del expediente. No tiene vuelta atrás.`,
+                      accion: 'Borrar',
+                      destructiva: true,
+                      alConfirmar: () => borrarTraza(exp.id, t.id),
+                    })
+                  }
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                    <path d="M2 2 L10 10 M10 2 L2 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Confirmar peticion={confirmar} onCerrar={() => setConfirmar(null)} />
+    </section>
   )
 }
 
@@ -196,20 +301,7 @@ function Vista({ exp, res, bloques, onAbrir }: VistaProps) {
         </div>
       )}
 
-      <section className="seccion">
-        <div className="seccion__cab">
-          <span className="rotulo">Traza del expediente</span>
-          <span className="dato silente">abierto {fechaCorta(exp.abierto)}</span>
-        </div>
-        <div className="traza">
-          {exp.traza.map((t) => (
-            <div key={t.id} className="traza__fila">
-              <span className="traza__fecha">{fechaCorta(t.fecha)}</span>
-              <span>{t.texto}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      <Traza exp={exp} rango={`abierto ${fechaCorta(exp.abierto)}`} />
     </div>
   )
 }
@@ -255,7 +347,7 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }: Req
       <header className="obra__cab">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <span className="sigla">{req.id}</span>
-          <span className={`marca${conforme ? ' es-verde' : req.estado === 'caducado' ? ' es-sello' : req.estado === 'caduca' ? ' es-ocre' : ''}`}>
+          <span className={`marca${conforme ? ' es-acento' : req.estado === 'caducado' ? ' es-sello' : req.estado === 'caduca' ? ' es-ocre' : ''}`}>
             {ROTULO_ESTADO[req.estado]}
           </span>
           {req.def.critico && <span className="marca es-tinta">Crítico</span>}
@@ -343,7 +435,7 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla }: Req
               >
                 <span className="miniatura" aria-hidden="true">
                   <svg viewBox="0 0 30 40" width="30" height="40">
-                    <rect x="0" y="0" width="30" height="4.5" fill="var(--registro-vapor)" />
+                    <rect x="0" y="0" width="30" height="4.5" fill="var(--acento-vapor)" />
                     {[8, 12, 16, 20, 24, 28, 32].map((y, i) => (
                       <rect
                         key={y}
@@ -451,6 +543,7 @@ interface ExpedienteProps {
   onVolver: () => void
   onActualizar: ActualizarRequisito
   onCrearPlantilla: (reqId: string) => void
+  onEditar: () => void
 }
 
 export default function Expediente({
@@ -460,8 +553,11 @@ export default function Expediente({
   onAbrirRequisito,
   onVolver,
   onActualizar,
-  onCrearPlantilla
+  onCrearPlantilla,
+  onEditar
 }: ExpedienteProps) {
+  const { esAdmin, actualizarExpediente, borrarExpediente } = useApp()
+  const [confirmar, setConfirmar] = useState<PeticionConfirmar | null>(null)
   const res = useMemo(() => resumen(exp), [exp])
   const bloques = useMemo(() => porBloque(res.reqs), [res.reqs])
   const req = res.reqs.find((r) => r.id === abierto) || null
@@ -480,19 +576,91 @@ export default function Expediente({
 
   const cerrado = exp.estado !== 'activo'
 
+  const cambiarEstado = (estado: EstadoExpediente) => {
+    const textos: Record<EstadoExpediente, PeticionConfirmar> = {
+      firmado: {
+        titulo: `Dar por firmado ${exp.referencia}`,
+        cuerpo:
+          `${exp.direccion} pasa al histórico y sus requisitos dejan de admitir cambios. ` +
+          (res.bloqueos > 0
+            ? `Ojo: quedan ${res.bloqueos} requisitos críticos sin aportar.`
+            : 'Todos los requisitos críticos están conformes.'),
+        accion: 'Dar por firmado',
+        alConfirmar: () => actualizarExpediente(exp.id, { estado: 'firmado' }),
+      },
+      archivado: {
+        titulo: `Archivar ${exp.referencia}`,
+        cuerpo:
+          'La operación se guarda como no cerrada. Se conserva la traza por si el inmueble ' +
+          'vuelve a cartera, y puedes reabrirlo cuando quieras.',
+        accion: 'Archivar',
+        alConfirmar: () => actualizarExpediente(exp.id, { estado: 'archivado' }),
+      },
+      activo: {
+        titulo: `Reabrir ${exp.referencia}`,
+        cuerpo: 'El expediente vuelve a la cartera en activo y sus requisitos admiten cambios otra vez.',
+        accion: 'Reabrir',
+        alConfirmar: () => actualizarExpediente(exp.id, { estado: 'activo' }),
+      },
+    }
+    setConfirmar(textos[estado])
+  }
+
+  const pedirBorrado = () =>
+    setConfirmar({
+      titulo: `Borrar ${exp.referencia}`,
+      cuerpo:
+        `Se borra ${exp.direccion} con sus ${res.total} requisitos y sus ${exp.traza.length} ` +
+        'anotaciones de traza. No tiene vuelta atrás. Si lo que quieres es sacarlo de la ' +
+        'cartera conservando el histórico, archívalo.',
+      accion: 'Borrar el expediente',
+      destructiva: true,
+      alConfirmar: async () => {
+        await borrarExpediente(exp.id)
+        onVolver()
+      },
+    })
+
   return (
     <>
-      <button className="volver" onClick={onVolver}>
-        ← Expedientes
-      </button>
+      <div className="cinta">
+        <button className="volver" onClick={onVolver}>
+          ← Expedientes
+        </button>
+
+        <div className="cinta__acciones">
+          <button className="btn es-plano" onClick={onEditar}>
+            Editar datos
+          </button>
+          {cerrado ? (
+            <button className="btn" onClick={() => cambiarEstado('activo')}>
+              Reabrir
+            </button>
+          ) : (
+            <>
+              <button className="btn" onClick={() => cambiarEstado('archivado')}>
+                Archivar
+              </button>
+              <button className="btn es-principal" onClick={() => cambiarEstado('firmado')}>
+                Dar por firmado
+              </button>
+            </>
+          )}
+          {esAdmin && (
+            <button className="btn es-plano es-peligro" onClick={pedirBorrado}>
+              Borrar
+            </button>
+          )}
+        </div>
+      </div>
 
       <header className="expcab">
         <div>
           <div className="expcab__ref">
-            <span className="ficha__ref">{exp.referencia}</span>
+            <span className="fila__ref">{exp.referencia}</span>
             <span className="marca">{exp.fase}</span>
             {!cerrado && <span className="marca es-tinta">{etiquetaFirma(exp)}</span>}
-            {exp.protocolo && <span className="marca es-verde">protocolo {exp.protocolo}</span>}
+            {exp.protocolo && <span className="marca es-acento">protocolo {exp.protocolo}</span>}
           </div>
           <h1 className="expcab__dir">{exp.direccion}</h1>
           <p className="expcab__lugar">
@@ -558,22 +726,10 @@ export default function Expediente({
                 : 'La operación no llegó a escriturarse. Se conserva la traza por si el inmueble vuelve a cartera.'}
             </p>
           </header>
-          <section className="seccion">
-            <div className="seccion__cab">
-              <span className="rotulo">Traza del expediente</span>
-              <span className="dato silente">
-                {fechaCorta(exp.abierto)} — {fechaCorta(exp.cerrado)}
-              </span>
-            </div>
-            <div className="traza">
-              {exp.traza.map((t) => (
-                <div key={t.id} className="traza__fila">
-                  <span className="traza__fecha">{fechaCorta(t.fecha)}</span>
-                  <span>{t.texto}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <Traza
+            exp={exp}
+            rango={`${fechaCorta(exp.abierto)} — ${fechaCorta(exp.cerrado)}`}
+          />
         </div>
       ) : (
         <div className="trabajo">
@@ -598,6 +754,8 @@ export default function Expediente({
           )}
         </div>
       )}
+
+      <Confirmar peticion={confirmar} onCerrar={() => setConfirmar(null)} />
     </>
   )
 }

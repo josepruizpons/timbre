@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 
 import Sello from './Sello'
+import { ApiError } from '../api'
 import { useApp } from '../contexts/app_context'
 
 /**
@@ -21,9 +22,14 @@ export default function Login() {
     setEnviando(true)
     try {
       await entrar(email.trim(), password)
-    } catch {
+    } catch (err) {
       // El backend responde 401 sin distinguir si falla el correo o la clave.
-      setError('Correo o contraseña incorrectos.')
+      // El 429 sí se distingue: ahí el mensaje dice cuánto hay que esperar.
+      setError(
+        err instanceof ApiError && err.status === 429
+          ? err.message
+          : 'Correo o contraseña incorrectos.'
+      )
       setEnviando(false)
     }
   }
@@ -79,6 +85,11 @@ export default function Login() {
         <button className="btn es-principal acceso__btn" type="submit" disabled={enviando}>
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>
+
+        <p className="acceso__ayuda">
+          Las cuentas las da de alta un administrador de tu agencia. Si has perdido la contraseña,
+          pídele que te ponga una nueva desde Ajustes → Equipo.
+        </p>
       </form>
     </div>
   )
