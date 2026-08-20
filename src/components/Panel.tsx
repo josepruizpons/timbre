@@ -44,7 +44,7 @@ function Regleta({ tramos, total }: { tramos: Tramo[]; total: number }) {
       </div>
       <figcaption className="regleta__leyenda">
         {tramos.map((t) => (
-          <span key={t.clave} className={`regleta__clave${t.n === 0 ? ' es-cero' : ''}`}>
+          <span key={t.clave} className={`regleta__clave es-${t.clave}${t.n === 0 ? ' es-cero' : ''}`}>
             <span className={`regleta__punto es-${t.clave}`} aria-hidden="true" />
             <b className="dato">{t.n}</b>
             {t.rotulo}

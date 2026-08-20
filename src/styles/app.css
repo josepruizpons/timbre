@@ -132,6 +132,20 @@
   padding: 30px 32px 80px;
 }
 
+@media (max-width: 640px) {
+  .acceso {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .acceso__serie {
+    font-size: 0.5rem;
+  }
+
+  .acceso__hoja {
+    padding: 28px 20px;
+  }
+}
+
 @media (max-width: 820px) {
   .app {
     flex-direction: column;
@@ -452,7 +466,7 @@ textarea.campo {
 
 .regleta__tramo.es-pendiente,
 .regleta__punto.es-pendiente {
-  background: var(--papel-hueco);
+  background: var(--carpeta);
 }
 
 .regleta__tramo.es-caduca,
@@ -483,6 +497,18 @@ textarea.campo {
 
 .regleta__clave.es-cero {
   opacity: 0.42;
+}
+
+.regleta__clave.es-conforme b {
+  color: var(--acento-texto);
+}
+
+.regleta__clave.es-caduca b {
+  color: var(--timbre);
+}
+
+.regleta__clave.es-caducado b {
+  color: var(--sello);
 }
 
 .regleta__punto {
@@ -1638,13 +1664,21 @@ textarea.campo {
 }
 
 .tarjeta-plt__pie {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 9px 17px;
+  display: grid;
+  gap: 7px;
+  padding: 9px 13px 9px 17px;
   border-top: 1px solid var(--linea-suave);
   background: var(--papel-hueco);
+}
+
+.tarjeta-plt__pie .dato {
+  font-size: var(--fs-micro);
+}
+
+.tarjeta-plt__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
 }
 
 /* ── Creador de plantillas ──────────────────────────────────────────────── */
@@ -1959,35 +1993,58 @@ textarea.campo {
 .acceso {
   min-height: 100vh;
   display: grid;
+  grid-template-columns: var(--margen-ancho) minmax(0, 1fr);
+}
+
+.acceso__margen {
+  position: relative;
+  display: grid;
   place-items: center;
-  padding: 24px;
+  background: var(--margen);
+  border-right: 1px solid var(--acento);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.13);
+  overflow: hidden;
+}
+
+.acceso__serie {
+  writing-mode: vertical-rl;
+  font-size: 0.56rem;
+  color: rgba(214, 224, 228, 0.3);
+  white-space: nowrap;
+}
+
+/* La hoja es papel de verdad, no un fondo con una tarjeta encima: el formulario
+   va escrito sobre ella y alineado donde después empiezan los títulos. */
+.acceso__hoja {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  padding: 40px 32px;
+  background: var(--papel);
 }
 
 .acceso__caja {
   width: 100%;
-  max-width: 380px;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 30px 28px 28px;
-  background: var(--papel);
-  border: 1px solid var(--linea);
-  border-radius: 3px;
-  box-shadow: 0 1px 0 var(--linea), 0 18px 40px -28px var(--tinta);
 }
 
 .acceso__marca {
   display: flex;
   align-items: center;
   gap: 14px;
+  padding-bottom: 18px;
   margin-bottom: 4px;
+  border-bottom: 1px solid var(--linea);
 }
 
 .acceso__nombre {
   display: block;
   font-family: var(--display);
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-variation-settings: 'wdth' 112, 'wght' 700;
+  font-size: 1.5rem;
   letter-spacing: 0.01em;
   color: var(--tinta);
 }
@@ -2003,6 +2060,14 @@ textarea.campo {
 .acceso__btn {
   margin-top: 4px;
   justify-content: center;
+}
+
+.acceso__ayuda {
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+  color: var(--tinta-60);
+  border-top: 1px solid var(--linea-suave);
+  padding-top: 12px;
 }
 
 
@@ -2313,9 +2378,15 @@ textarea.campo {
 
 .ajustes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .ajustes {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .tarjeta {
@@ -2389,7 +2460,7 @@ textarea.campo {
 }
 
 .campo.es-hex {
-  width: 9ch;
+  width: 11ch;
   text-transform: lowercase;
 }
 

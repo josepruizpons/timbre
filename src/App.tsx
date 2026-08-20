@@ -9,6 +9,7 @@ import Creador from './components/Creador'
 import Usuarios from './components/Usuarios'
 import Ajustes from './components/Ajustes'
 import Login from './components/Login'
+import Acceso from './components/ui/Acceso'
 import Avisos from './components/ui/Avisos'
 import { useApp } from './contexts/app_context'
 import type { ActualizarRequisitoDTO, ExpedienteDTO, PlantillaDTO } from './types'
@@ -92,9 +93,9 @@ export default function App() {
 
   if (sesion === null) {
     return (
-      <div className="acceso">
+      <Acceso>
         <span className="rotulo">Comprobando la sesión…</span>
-      </div>
+      </Acceso>
     )
   }
 

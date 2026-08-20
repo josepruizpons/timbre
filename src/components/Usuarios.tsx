@@ -233,10 +233,10 @@ export default function Usuarios() {
         </div>
       ) : (
         <div className="registro">
-          {usuarios.map((u) => (
+          {usuarios.map((u, i) => (
             <div key={u.id} className={`fila es-estatica${u.activo ? '' : ' es-cerrada'}`}>
               <span className="fila__folio dato" aria-hidden="true">
-                {u.rol === 'admin' ? '★' : '·'}
+                {String(i + 1).padStart(2, '0')}
               </span>
 
               <span className="persona__sello" aria-hidden="true">

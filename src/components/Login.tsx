@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 
 import Sello from './Sello'
+import Acceso from './ui/Acceso'
 import { ApiError } from '../api'
 import { useApp } from '../contexts/app_context'
 
@@ -35,7 +36,7 @@ export default function Login() {
   }
 
   return (
-    <div className="acceso">
+    <Acceso>
       <form className="acceso__caja" onSubmit={enviar}>
         <div className="acceso__marca">
           <Sello progreso={0.5} tamano={72} />
@@ -91,6 +92,6 @@ export default function Login() {
           pídele que te ponga una nueva desde Ajustes → Equipo.
         </p>
       </form>
-    </div>
+    </Acceso>
   )
 }

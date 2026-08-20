@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 
+import Acceso from './ui/Acceso'
+
 interface Props {
   children: ReactNode
 }
@@ -27,7 +29,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (!this.state.error) return this.props.children
 
     return (
-      <div className="acceso">
+      <Acceso>
         <div className="acceso__caja">
           <span className="rotulo">Timbre</span>
           <h1 className="acceso__nombre">Algo se ha roto</h1>
@@ -45,7 +47,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             Recargar Timbre
           </button>
         </div>
-      </div>
+      </Acceso>
     )
   }
 }
