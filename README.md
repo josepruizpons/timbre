@@ -33,6 +33,10 @@ no pasas del login.
 - **Requisito** — base legal, quién lo emite, quién lo aporta y su vigencia;
   selección de plantilla, vista previa del documento sobre papel timbrado y
   formulario de campos enlazado con la vista previa.
+- **Importador de documentos** — el camino de entrada para una agencia que ya
+  tiene sus contratos en Word. Se suelta un `.docx` o se pega desde Word, se
+  dice de qué expediente salió el documento, y Timbre reconoce solo los datos
+  que lleva dentro. Ver más abajo.
 - **Creador de plantillas** — editor de campos y de cuerpo con tokens, y vista
   previa en vivo contra un expediente real. Duplicar versiona sin tocar lo que
   ya usan los expedientes firmados.
@@ -44,6 +48,44 @@ no pasas del login.
   esa persona.
 - **Ajustes** — la ficha propia, la contraseña y, para administradores, la marca
   de la agencia.
+
+## Importar los documentos que la agencia ya tiene
+
+Una agencia llega con cuarenta contratos en Word. Escribirlos de nuevo uno a uno
+en el editor es lo que mata la migración, así que el documento entra primero y
+los campos salen de él.
+
+El truco está en que **la agencia no pega una plantilla en blanco: pega un
+documento real de un expediente que Timbre ya conoce.** Eso permite usar los
+filtros de formato al revés —renderizar cada dato del expediente y buscarlo
+literalmente en el texto—, y lo que sale no es una conjetura sino una
+coincidencia exacta que además dice qué filtro hacía falta:
+
+| En el documento | Porque | Propone |
+| --- | --- | --- |
+| `425.000,00 €` | `euros(425000)` da eso | `{{precio\|eur}}` |
+| `CUATROCIENTOS VEINTICINCO MIL EUROS` | `eurosEnLetras(425000)` da eso | `{{precio\|letra}}` |
+| `17 de septiembre de 2026` | `fechaLarga(fechaFirma)` da eso | `{{fechaFirma\|fecha}}` |
+| `Montserrat Solé Ribas` | es `expediente.vendedor` | `{{vendedor}}` |
+
+Sobre un contrato de arras real de 31 líneas, eso reconoce 20 variables sin que
+nadie toque nada. Lo que no case contra el expediente lo recogen los detectores
+de patrón —NIF, NIE, IBAN, referencia catastral, importes, fechas en largo— y
+los de hueco: `____`, `[NOMBRE]`, `XXXX`, que son huecos que el documento de
+Word **ya traía marcados** y a los que solo les falta el nombre.
+
+Lo que no case con nada se marca a mano: se selecciona sobre la hoja, se le pone
+nombre y se marca en todas sus repeticiones. Todas, pero **nunca a ciegas**: el
+diálogo enseña cada aparición con su contexto y deja desmarcarlas una a una,
+porque el municipio del inmueble y la ciudad de la notaría se escriben igual.
+
+Del documento se conserva la estructura —títulos, cláusulas numeradas
+(`PRIMERA.-`), apartados (`REUNIDOS`, `EXPONEN`), notas al pie— y se descarta el
+formato. Cuarenta documentos escritos por cuatro personas distintas entran con
+cuarenta tipografías y salen todos con la cara de Timbre.
+
+`mammoth` lee el `.docx` y se carga aparte: solo se descarga cuando alguien
+suelta un fichero, no al abrir la aplicación.
 
 ## El catálogo de requisitos
 
@@ -109,12 +151,16 @@ src/
   constants.ts         API_HOSTNAME y enumerados
   contexts/            app_context: sesión, expedientes, plantillas y avisos
   lib/marca.ts         del color de la agencia salen los seis tonos de la interfaz
+  lib/importar/        documento.ts (Word → cuerpo), deteccion.ts (qué es
+                       variable y por qué), marcado.ts (marcar y repetir)
+  data/contexto.ts     qué datos puede volcar un expediente, con nombre y tipo
   data/catalog.ts      requisitos, bloques y reglas de aplicabilidad
   lib/guilloche.ts     curvas de guilloche y bandas de onda paramétricas
   lib/format.ts        formato español, incluida la conversión de importes a letra
   lib/expediente.ts    evaluación de estados, caducidades y precarga
   components/          Sello, Casilla, Hoja, Formulario, Margen, Panel,
                        Expediente, ExpedienteForm, Biblioteca, Creador,
+                       Importador, HojaMarcable, DialogoVariable,
                        Usuarios, Ajustes, Login, ErrorBoundary
   components/ui/       Modal, Avisos, Confirmar, Campos
   styles/              tokens y componentes

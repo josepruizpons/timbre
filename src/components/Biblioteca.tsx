@@ -9,10 +9,11 @@ import type { Plantilla } from '../types'
 interface BibliotecaProps {
   plantillas: Plantilla[]
   onCrear: () => void
+  onImportar: () => void
   onEditar: (id: string) => void
 }
 
-export default function Biblioteca({ plantillas, onCrear, onEditar }: BibliotecaProps) {
+export default function Biblioteca({ plantillas, onCrear, onImportar, onEditar }: BibliotecaProps) {
   const { borrarPlantilla, duplicarPlantilla } = useApp()
   const [filtro, setFiltro] = useState('todas')
   const [confirmar, setConfirmar] = useState<PeticionConfirmar | null>(null)
@@ -45,9 +46,14 @@ export default function Biblioteca({ plantillas, onCrear, onEditar }: Biblioteca
             datos que ya constan en el caso llegan rellenos y solo queda lo específico del
             documento.
           </p>
-          <button className="btn es-principal" onClick={onCrear}>
-            Crear plantilla
-          </button>
+          <div className="portada__botones">
+            <button className="btn es-principal" onClick={onImportar}>
+              Importar un documento
+            </button>
+            <button className="btn" onClick={onCrear}>
+              Escribir una desde cero
+            </button>
+          </div>
         </div>
       </header>
 
@@ -82,11 +88,17 @@ export default function Biblioteca({ plantillas, onCrear, onEditar }: Biblioteca
           <p className="vacio__titulo">Todavía no hay plantillas</p>
           <p className="vacio__texto">
             Una plantilla es un escrito que la agencia repite —un contrato de arras, una solicitud
-            de nota simple— con huecos que se rellenan solos con los datos del expediente.
+            de nota simple— con huecos que se rellenan solos con los datos del expediente. Si ya
+            tienes esos documentos en Word, tráelos: Timbre reconoce sus datos solo.
           </p>
-          <button className="btn es-principal" onClick={onCrear}>
-            Crear la primera
-          </button>
+          <div className="portada__botones" style={{ justifyContent: 'center' }}>
+            <button className="btn es-principal" onClick={onImportar}>
+              Importar un documento
+            </button>
+            <button className="btn" onClick={onCrear}>
+              Escribir una desde cero
+            </button>
+          </div>
         </div>
       ) : (
         <div className="biblioteca">

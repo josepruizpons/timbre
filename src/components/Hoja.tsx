@@ -4,7 +4,7 @@ import { waveBand, serial } from '../lib/guilloche'
 import { applyFilter } from '../lib/format'
 import type { Campo, Plantilla } from '../types'
 
-const TOKEN = /\{\{([a-zA-Z0-9_]+)(?:\|([a-z]+))?\}\}/g
+const tokenRe = () => /\{\{([a-zA-Z0-9_]+)(?:\|([a-z]+))?\}\}/g
 
 // Pie de firmas propio de cada tipo de documento. Los que no aparecen aquí no
 // se firman: son solicitudes o comunicaciones.
@@ -61,8 +61,8 @@ function segmentar(
   const salida: Segmento[] = []
   let ultimo = 0
   let m: RegExpExecArray | null
-  TOKEN.lastIndex = 0
-  while ((m = TOKEN.exec(linea)) !== null) {
+  const re = tokenRe()
+  while ((m = re.exec(linea)) !== null) {
     if (m.index > ultimo) salida.push({ tipo: 'texto', texto: linea.slice(ultimo, m.index) })
     const clave = m[1]
     const filtro = m[2]

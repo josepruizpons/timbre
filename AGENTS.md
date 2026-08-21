@@ -71,6 +71,27 @@ predicados (`aplica: (e) => e.hipoteca`). La base de datos solo guarda el estado
 de cada requisito, con `req_id` (`IN-01`) como clave. Si cambian los requisitos,
 se cambia aquí.
 
+## El importador: los offsets se recalculan, no se guardan
+
+`src/lib/importar/` funciona sobre un modelo deliberadamente simple: **el cuerpo
+es siempre el texto actual, tokens incluidos.** Marcar una variable lo reescribe
+en el acto y los hallazgos se vuelven a calcular sobre el texto nuevo.
+
+No guardes offsets entre renders. Es de donde salen los fallos raros en los
+editores de este tipo: marcas una variable, todas las posiciones posteriores se
+desplazan, y el siguiente marcado corta por donde no es. Cuando haya que aplicar
+varias marcas a la vez —`aceptarSeguros`— se ordenan de atrás hacia delante y se
+aplican sobre el mismo texto de una tacada.
+
+Dos cosas que parecen detalles y no lo son:
+
+- **Los apóstrofos.** Word convierte `'` en `'` al teclear. Un expediente con
+  «Carrer d'Aribau» no casa con un documento que dice «Carrer d'Aribau» si la
+  comparación es literal. `plegar()` normaliza comillas, apóstrofos y guiones
+  **carácter a carácter**, para que las posiciones dentro del texto no se muevan.
+- **`lastIndex`.** Un regex con `/g` a nivel de módulo lleva estado dentro. Aquí
+  se construyen en cada uso (`tokenRe()`), no se reutilizan.
+
 ## Marca blanca: nunca escribas un color de acción a mano
 
 Todo el color de acción sale de `--acento` y sus derivados, que `lib/marca.ts`

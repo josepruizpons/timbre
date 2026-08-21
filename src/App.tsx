@@ -6,6 +6,7 @@ import Expediente from './components/Expediente'
 import ExpedienteForm from './components/ExpedienteForm'
 import Biblioteca from './components/Biblioteca'
 import Creador from './components/Creador'
+import Importador from './components/Importador'
 import Usuarios from './components/Usuarios'
 import Ajustes from './components/Ajustes'
 import Login from './components/Login'
@@ -19,6 +20,7 @@ type Ruta =
   | { v: 'exp'; id: string; reqId?: string }
   | { v: 'biblioteca' }
   | { v: 'creador'; plantillaId?: string; requisito?: string; volverA?: Ruta }
+  | { v: 'importador'; requisito?: string }
   | { v: 'usuarios' }
   | { v: 'ajustes' }
 
@@ -29,6 +31,7 @@ const SECCION_DE: Record<Ruta['v'], Seccion> = {
   exp: 'expedientes',
   biblioteca: 'plantillas',
   creador: 'plantillas',
+  importador: 'plantillas',
   usuarios: 'usuarios',
   ajustes: 'ajustes',
 }
@@ -175,6 +178,7 @@ export default function App() {
           <Biblioteca
             plantillas={plantillas}
             onCrear={() => setRuta({ v: 'creador', volverA: { v: 'biblioteca' } })}
+            onImportar={() => setRuta({ v: 'importador' })}
             onEditar={(id) =>
               setRuta({ v: 'creador', plantillaId: id, volverA: { v: 'biblioteca' } })
             }
@@ -189,6 +193,14 @@ export default function App() {
             expedienteMuestra={muestra}
             onGuardar={(plantilla) => void onGuardarPlantilla(plantilla)}
             onCancelar={() => setRuta(ruta.volverA ?? { v: 'biblioteca' })}
+          />
+        )}
+
+        {ruta.v === 'importador' && (
+          <Importador
+            requisitoSugerido={ruta.requisito}
+            onGuardada={() => setRuta({ v: 'biblioteca' })}
+            onCancelar={() => setRuta({ v: 'biblioteca' })}
           />
         )}
 

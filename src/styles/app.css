@@ -2545,3 +2545,334 @@ textarea.campo {
 .btn.es-plano.es-peligro:hover {
   background: var(--sello-tenue);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Importador de documentos
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.portada__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+/* ── Buzón de entrada ───────────────────────────────────────────────────── */
+
+.buzon {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 44px 28px 34px;
+  text-align: center;
+  background: var(--papel);
+  border: 1.5px dashed var(--linea);
+  transition: border-color 0.14s, background 0.14s;
+}
+
+.buzon.es-encima {
+  border-color: var(--acento);
+  background: var(--acento-vapor);
+}
+
+.buzon.es-leyendo {
+  border-style: solid;
+  border-color: var(--acento);
+}
+
+.buzon__icono {
+  color: var(--linea);
+}
+
+.buzon.es-encima .buzon__icono {
+  color: var(--acento);
+}
+
+.buzon__titulo {
+  font-family: var(--display);
+  font-variation-settings: 'wdth' 108, 'wght' 600;
+  font-size: 1.12rem;
+  color: var(--tinta);
+}
+
+.buzon__o {
+  font-size: var(--fs-xs);
+  color: var(--grafito);
+  margin: -4px 0;
+}
+
+/* El `label` hace de botón para el input de fichero, que va escondido. */
+.buzon label.btn {
+  display: inline-flex;
+}
+
+.buzon__pegar {
+  width: min(560px, 100%);
+  min-height: 88px;
+  margin-top: 6px;
+  padding: 11px 13px;
+  resize: none;
+  font-family: var(--texto);
+  font-size: var(--fs-sm);
+  text-align: center;
+  color: var(--tinta);
+  background: var(--papel-hueco);
+  border: 1px solid var(--linea-suave);
+  border-radius: var(--r);
+}
+
+.buzon__pegar::placeholder {
+  color: var(--grafito);
+}
+
+.buzon__pegar:focus {
+  outline: none;
+  border-color: var(--acento);
+  background: #fff;
+}
+
+.buzon__pie {
+  max-width: 52ch;
+  margin-top: 6px;
+  font-size: var(--fs-xs);
+  color: var(--tinta-60);
+}
+
+/* ── Propuestas de variable ─────────────────────────────────────────────── */
+
+.propuestas__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0 8px;
+  margin-top: 4px;
+  border-top: 1px solid var(--linea-suave);
+}
+
+.propuestas__vacio {
+  font-size: var(--fs-sm);
+  padding: 6px 0;
+}
+
+.propuestas {
+  display: grid;
+  gap: 2px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.propuesta {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.propuesta:hover {
+  background: var(--papel-hueco);
+  border-color: var(--linea-suave);
+}
+
+.propuesta__punto {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.propuesta.es-alta .propuesta__punto {
+  background: var(--acento);
+}
+
+.propuesta.es-media .propuesta__punto {
+  background: var(--timbre);
+}
+
+.propuesta__cuerpo {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.propuesta__literal {
+  font-family: var(--dato);
+  font-size: var(--fs-xs);
+  color: var(--tinta);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.propuesta__motivo {
+  font-size: var(--fs-micro);
+  color: var(--tinta-60);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.propuesta__etiqueta {
+  font-size: var(--fs-micro);
+  color: var(--grafito);
+  white-space: nowrap;
+}
+
+/* ── Lista de variables ya marcadas ─────────────────────────────────────── */
+
+.marcadas {
+  display: grid;
+  gap: 1px;
+}
+
+.marcada {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--linea-suave);
+}
+
+.marcada:last-child {
+  border-bottom: none;
+}
+
+.marcada__token {
+  font-family: var(--dato);
+  font-size: var(--fs-micro);
+  color: var(--acento-texto);
+}
+
+.marcada__etiqueta {
+  font-size: var(--fs-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── La hoja marcable ───────────────────────────────────────────────────── */
+
+.marcable {
+  cursor: text;
+}
+
+.marcable ::selection {
+  background: var(--acento-tenue);
+}
+
+/* Propuesta sin aceptar: subrayada con la tinta de su confianza. */
+.hallado {
+  font: inherit;
+  color: inherit;
+  padding: 1px 0;
+  border-bottom: 2px solid var(--acento-tenue);
+  background: linear-gradient(var(--acento-vapor), var(--acento-vapor));
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.hallado:hover,
+.hallado.es-mirado {
+  background: var(--acento-tenue);
+  border-bottom-color: var(--acento);
+}
+
+.hallado.es-media {
+  border-bottom-color: var(--timbre-tenue);
+  background: linear-gradient(var(--timbre-tenue), var(--timbre-tenue));
+}
+
+.hallado.es-media:hover,
+.hallado.es-media.es-mirado {
+  background: var(--timbre-tenue);
+  border-bottom-color: var(--timbre);
+}
+
+/* Ya marcada: la misma ranura que verá el agente, pero se puede deshacer. */
+.ranura.es-marcada {
+  font: inherit;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 1px 7px;
+  background: var(--acento-vapor);
+  border: 1px solid var(--acento-tenue);
+  border-radius: var(--r);
+  color: var(--acento-texto);
+  cursor: pointer;
+}
+
+.ranura.es-marcada:hover {
+  background: var(--sello-tenue);
+  border-color: var(--sello);
+  color: var(--sello);
+}
+
+.ranura__filtro {
+  font-family: var(--dato);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+/* ── Diálogo de nombrado ────────────────────────────────────────────────── */
+
+.dialogo__motivo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 16px;
+  font-size: var(--fs-sm);
+  color: var(--tinta-80);
+}
+
+.dialogo__aviso {
+  margin-bottom: 9px;
+  font-size: var(--fs-xs);
+  color: var(--tinta-60);
+}
+
+.repeticiones {
+  display: grid;
+  gap: 1px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.repeticion {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 9px;
+  padding: 7px 9px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: var(--papel-hueco);
+  opacity: 0.55;
+  transition: opacity 0.12s, background 0.12s, border-color 0.12s;
+}
+
+.repeticion.es-puesta {
+  opacity: 1;
+  background: var(--acento-vapor);
+  border-color: var(--acento-tenue);
+}
+
+.repeticion__texto {
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--tinta-60);
+}
+
+.repeticion__texto b {
+  padding: 0 2px;
+  font-weight: 600;
+  color: var(--tinta);
+  background: var(--acento-tenue);
+}
