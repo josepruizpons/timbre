@@ -133,6 +133,41 @@ export interface RequisitoEvaluado {
   dias: number | null
 }
 
+export type OrigenDocumento = 'generado' | 'recibido'
+export type EstadoDocumento = 'borrador' | 'enviado' | 'firmado' | 'recibido'
+
+export interface Documento {
+  id: string
+  /** Requisito que cubre, o `null` si solo vive en la carpeta del expediente. */
+  reqId: string | null
+  origen: OrigenDocumento
+  estado: EstadoDocumento
+  nombre: string
+
+  /** Solo si es generado: el PDF se produce al descargar, no se almacena. */
+  plantillaId: string | null
+  valores: Record<string, string>
+  congelado: boolean
+
+  /** Solo si es recibido. */
+  nombreFichero: string | null
+  mime: string | null
+  tamano: number | null
+  emisor: string | null
+
+  emitido: string | null
+  caduca: string | null
+  nota: string
+  autor: string | null
+  creado: string
+}
+
+export interface SubidaConcedida {
+  documentoId: string
+  url: string
+  vence: number
+}
+
 export type Rol = 'admin' | 'agente'
 
 /** Lo que una agencia puede cambiar de su propia interfaz. */

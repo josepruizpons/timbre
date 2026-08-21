@@ -3099,3 +3099,151 @@ textarea.campo {
     transform: rotate(90deg);
   }
 }
+
+/* ── La carpeta del expediente ──────────────────────────────────────────────
+   Aquí cabe lo que cubre requisito y lo que no: en la carpeta de un caso real
+   también hay papeles sueltos.                                              */
+
+.carpeta {
+  position: relative;
+  margin-bottom: 22px;
+  padding: 14px 16px;
+  background: var(--papel);
+  border: 1px solid var(--linea);
+}
+
+.carpeta.es-compacta {
+  margin: 0 0 18px;
+  background: var(--papel-hueco);
+}
+
+.carpeta.es-encima {
+  border-color: var(--acento);
+  border-style: dashed;
+}
+
+.carpeta__vacia {
+  font-size: var(--fs-sm);
+  max-width: 62ch;
+  padding: 4px 0 2px;
+}
+
+/* La diana solo aparece mientras se arrastra algo encima. */
+.carpeta__diana {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--acento-vapor);
+  color: var(--acento-texto);
+  font-family: var(--display);
+  font-variation-settings: 'wdth' 104, 'wght' 600;
+  font-size: var(--fs-sm);
+  pointer-events: none;
+}
+
+.documentos {
+  display: grid;
+}
+
+.documento {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px dotted var(--linea-suave);
+}
+
+.documento:last-child {
+  border-bottom: none;
+}
+
+.documento__tipo {
+  width: 42px;
+  padding: 4px 0;
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.07em;
+  color: var(--tinta-60);
+  background: var(--papel-hueco);
+  border: 1px solid var(--linea-suave);
+}
+
+/* Un documento nacido de plantilla no tiene fichero detrás: se distingue. */
+.documento.es-generado .documento__tipo {
+  color: var(--acento-texto);
+  background: var(--acento-vapor);
+  border-color: var(--acento-tenue);
+}
+
+.documento__cuerpo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.documento__nombre {
+  font-size: var(--fs-sm);
+  color: var(--tinta);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.documento__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.documento__emisor {
+  font-size: var(--fs-xs);
+  color: var(--tinta-60);
+}
+
+.documento__mandos {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Barra de subida ────────────────────────────────────────────────────── */
+
+.subiendo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 11px;
+  margin-bottom: 10px;
+  background: var(--acento-vapor);
+  border: 1px solid var(--acento-tenue);
+}
+
+.subiendo__nombre {
+  font-size: var(--fs-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* El `label` hace de botón para el input de fichero escondido. */
+.carpeta label.btn {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .documento {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .documento__mandos {
+    grid-column: 2;
+  }
+
+  .subiendo {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}

@@ -42,6 +42,8 @@ interface AppState {
   entrar: (email: string, password: string) => Promise<void>
   salir: () => Promise<void>
   recargar: () => Promise<void>
+  /** Vuelve a traer un expediente: su estado cambia al subir o quitar papeles. */
+  recargarExpediente: (id: string) => Promise<void>
 
   avisar: (texto: string, tono?: Aviso['tono']) => void
   descartarAviso: (id: number) => void
@@ -174,6 +176,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setExpedientes([])
     setPlantillas([])
     aplicarMarca(null)
+  }, [])
+
+  const recargarExpediente = useCallback(async (id: string) => {
+    try {
+      const actualizado = await api.get_expediente(id)
+      setExpedientes((prev) => prev.map((e) => (e.id === id ? actualizado : e)))
+    } catch {
+      // Si falla, lo que hay en pantalla sigue siendo lo último bueno.
+    }
   }, [])
 
   const refrescarPerfil = useCallback(async () => {
@@ -357,6 +368,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       entrar,
       salir,
       recargar: cargar,
+      recargarExpediente,
       avisar,
       descartarAviso,
       crearExpediente,
@@ -373,7 +385,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }),
     [
       sesion, agente, expedientes, plantillas, cargando, error, avisos,
-      entrar, salir, cargar, avisar, descartarAviso,
+      entrar, salir, cargar, recargarExpediente, avisar, descartarAviso,
       crearExpediente, actualizarExpediente, borrarExpediente, actualizarRequisito,
       anadirTraza, borrarTraza,
       guardarPlantilla, borrarPlantilla, duplicarPlantilla,

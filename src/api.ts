@@ -1,6 +1,8 @@
 import { API_HOSTNAME } from './constants'
 import type {
   ActualizarRequisitoDTO,
+  Documento,
+  SubidaConcedida,
   ActualizarUsuarioDTO,
   Agencia,
   CrearUsuarioDTO,
@@ -120,6 +122,97 @@ export const anadir_traza = (id: string, texto: string, fecha?: string) =>
 
 export const borrar_traza = (id: string, entrada: number) =>
   request<void>(`/api/expedientes/${id}/traza/${entrada}`, { method: 'DELETE' })
+
+// ─── Documentos ──────────────────────────────────────────────────────────────
+
+export const get_documentos = (expId: string) =>
+  request<Documento[]>(`/api/expedientes/${expId}/documentos`)
+
+/**
+ * Sube un fichero al expediente. El fichero **no pasa por la API**: se pide una
+ * URL firmada, el navegador la usa para subir directo al almacén y luego avisa.
+ * Así una subida de veinte megas no ocupa el servidor.
+ */
+export async function subir_documento(
+  expId: string,
+  fichero: File,
+  datos: { reqId?: string | null; nombre?: string; emisor?: string; emitido?: string } = {},
+  alProgresar?: (porcentaje: number) => void
+): Promise<Documento> {
+  const concedida = await request<SubidaConcedida>(
+    `/api/expedientes/${expId}/documentos/subida`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        nombreFichero: fichero.name,
+        mime: fichero.type || 'application/octet-stream',
+        tamano: fichero.size,
+        reqId: datos.reqId ?? null,
+      }),
+    }
+  )
+
+  await subir_al_almacen(concedida.url, fichero, alProgresar)
+
+  return request<Documento>(
+    `/api/expedientes/${expId}/documentos/${concedida.documentoId}/confirmar`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        ...(datos.nombre ? { nombre: datos.nombre } : {}),
+        ...(datos.emisor ? { emisor: datos.emisor } : {}),
+        ...(datos.emitido ? { emitido: datos.emitido } : {}),
+      }),
+    }
+  )
+}
+
+/**
+ * El PUT va con XHR y no con fetch por una sola razón: fetch todavía no informa
+ * del progreso de subida, y un escaneo de veinte megas por una línea mala
+ * necesita barra.
+ */
+function subir_al_almacen(
+  url: string,
+  fichero: File,
+  alProgresar?: (porcentaje: number) => void
+): Promise<void> {
+  return new Promise((resolver, rechazar) => {
+    const peticion = new XMLHttpRequest()
+    peticion.open('PUT', url)
+    peticion.setRequestHeader('Content-Type', fichero.type || 'application/octet-stream')
+
+    peticion.upload.onprogress = (e) => {
+      if (e.lengthComputable && alProgresar) {
+        alProgresar(Math.round((e.loaded / e.total) * 100))
+      }
+    }
+    peticion.onload = () =>
+      peticion.status >= 200 && peticion.status < 300
+        ? resolver()
+        : rechazar(new ApiError(peticion.status, 'ALMACEN', 'No se ha podido subir el fichero'))
+    peticion.onerror = () =>
+      rechazar(new ApiError(0, 'ALMACEN', 'Se ha cortado la subida del fichero'))
+    peticion.send(fichero)
+  })
+}
+
+export const actualizar_documento = (
+  expId: string,
+  id: string,
+  datos: Partial<Pick<Documento, 'nombre' | 'emisor' | 'nota' | 'emitido' | 'reqId' | 'estado'>>
+) =>
+  request<Documento>(`/api/expedientes/${expId}/documentos/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(datos),
+  })
+
+export const borrar_documento = (expId: string, id: string) =>
+  request<void>(`/api/expedientes/${expId}/documentos/${id}`, { method: 'DELETE' })
+
+/** Devuelve una URL firmada de vida corta, no el fichero. */
+export const url_de_descarga = (expId: string, id: string) =>
+  request<{ url: string }>(`/api/expedientes/${expId}/documentos/${id}/descarga`)
 
 // ─── Plantillas ──────────────────────────────────────────────────────────────
 
