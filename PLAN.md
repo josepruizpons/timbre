@@ -128,9 +128,21 @@ Lo comprueba `npm run exportar`: 25 comprobaciones, entre ellas que `mammoth`
 —el mismo lector con el que el importador se traga los Word de la agencia— abre
 el .docx que generamos, y que el índice no se contradice.
 
+Y `scripts/navegador/` guarda dos recorridos con Playwright para lo que Node no
+alcanza: que el ZIP se arme en el navegador bajando los ficheros del bucket de
+verdad, y que en papel la hoja pierda el recorte que tiene en pantalla.
+
 **Lo que falta de esta fase.** Nadie ha abierto todavía el .docx en un Word de
 verdad: se ha comprobado contra `unzip` y contra `mammoth`, que son estrictos
 pero no son Word.
+
+### Un hallazgo suelto
+
+La aplicación no lleva la ruta en la URL: recargar la página en un expediente
+devuelve a la lista. Salió montando los recorridos de navegador, pero afecta al
+agente más que a las pruebas —no puede guardar el enlace de un expediente ni
+mandárselo a un compañero, y cualquier recarga le echa fuera—. No es de ninguna
+fase; es una tarde de trabajo cuando toque.
 
 ### Fase 3 · Datos con procedencia
 
