@@ -6,6 +6,7 @@ import Hoja from './Hoja'
 import Formulario from './Formulario'
 import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
 import Carpeta from './Carpeta'
+import { PendientesDelCaso } from './Pendientes'
 import { useDocumentos } from '../lib/useDocumentos'
 import { imprimir } from '../lib/exportar/imprimir'
 import { comoDocx, nombreDocx } from '../lib/exportar/docx'
@@ -371,6 +372,10 @@ function Vista({ exp, res, bloques, plantillas, onAbrir, documentos, onCambioDoc
           </span>
         </div>
       )}
+
+      {/* Antes de la carpeta: lo primero que quiere saber el agente al abrir un
+          caso no es qué hay dentro, es qué está esperando y de quién. */}
+      <PendientesDelCaso exp={exp} plantillas={plantillas} onAbrir={onAbrir} />
 
       <Carpeta
         expedienteId={exp.id}

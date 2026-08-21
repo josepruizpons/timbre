@@ -41,6 +41,41 @@ export interface RegistroRequisito {
   plantillaId: string | null
   valores: Record<string, string>
   nota: string
+  /** Día en que se le pidió a quien lo tiene que aportar. */
+  pedido: string | null
+  /** Último recordatorio. Sirve para no insistir dos días seguidos. */
+  recordado: string | null
+}
+
+/** De dónde salió un dato. El papel gana a la palabra de alguien. */
+export type FuenteDato = 'documento' | 'agente' | 'expediente'
+
+/**
+ * Una observación: «la nota simple dice que la superficie es 86,40».
+ *
+ * No es una verdad, es lo que dice una fuente. Dos observaciones del mismo dato
+ * con valores distintos son una discrepancia que enseñar, no un error que
+ * resolver en silencio.
+ */
+export interface DatoExpediente {
+  id: number
+  clave: string
+  valor: string
+  fuente: FuenteDato
+  documentoId: string | null
+  documentoNombre: string | null
+  /** Requisito del papel del que salió: dice de qué tipo de documento viene. */
+  reqId: string | null
+  confirmado: string | null
+  autor: string | null
+  actualizado: string
+}
+
+export interface GuardarDatoDTO {
+  clave: string
+  /** Vacío retira la observación. */
+  valor: string
+  documentoId?: string | null
 }
 
 export interface EntradaTraza {
@@ -129,6 +164,9 @@ export interface RequisitoEvaluado {
   valores: Record<string, string>
   nota: string
   emitido: string | null
+  /** Día en que se pidió, si está en curso. */
+  pedido: string | null
+  recordado: string | null
   caduca: string | null
   dias: number | null
 }
@@ -248,6 +286,8 @@ export interface ActualizarRequisitoDTO {
   plantillaId?: string | null
   valores?: Record<string, string>
   nota?: string
+  pedido?: string | null
+  recordado?: string | null
 }
 
 /** Cuerpo de alta o edición de una plantilla. */

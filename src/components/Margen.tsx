@@ -1,7 +1,7 @@
 import { iniciales } from '../lib/marca'
 import { useApp } from '../contexts/app_context'
 
-export type Seccion = 'expedientes' | 'plantillas' | 'usuarios' | 'ajustes'
+export type Seccion = 'expedientes' | 'pendientes' | 'plantillas' | 'usuarios' | 'ajustes'
 
 interface MargenProps {
   seccion: Seccion
@@ -15,6 +15,14 @@ const ICONO = {
     <>
       <path d="M2.5 5.5 h6 l1.5 2 h7.5 v9.5 h-15 z" />
       <path d="M2.5 9.5 h16.5" />
+    </>
+  ),
+  // Un reloj: lo que define esta pantalla no es lo que falta, es cuánto lleva
+  // faltando.
+  pendientes: (
+    <>
+      <circle cx="11" cy="11.5" r="8" />
+      <path d="M11 6.5 v5 l3.5 2" />
     </>
   ),
   plantillas: (
@@ -71,6 +79,7 @@ export default function Margen({ seccion, onIr, onSalir }: MargenProps) {
 
   const items: { id: Seccion; etiqueta: string }[] = [
     { id: 'expedientes', etiqueta: 'Casos' },
+    { id: 'pendientes', etiqueta: 'Esperas' },
     { id: 'plantillas', etiqueta: 'Plantillas' },
     ...(esAdmin ? ([{ id: 'usuarios', etiqueta: 'Equipo' }] as const) : []),
     { id: 'ajustes', etiqueta: 'Ajustes' },

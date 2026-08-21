@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Margen, { type Seccion } from './components/Margen'
 import Panel from './components/Panel'
 import Expediente from './components/Expediente'
+import Pendientes from './components/Pendientes'
 import ExpedienteForm from './components/ExpedienteForm'
 import Biblioteca from './components/Biblioteca'
 import Creador from './components/Creador'
@@ -13,21 +14,12 @@ import Login from './components/Login'
 import Acceso from './components/ui/Acceso'
 import Avisos from './components/ui/Avisos'
 import { useApp } from './contexts/app_context'
+import { aPath, desdePath, mismaRuta, type Ruta } from './lib/ruta'
 import type { ActualizarRequisitoDTO, ExpedienteDTO, PlantillaDTO } from './types'
-
-type Ruta =
-  | { v: 'panel' }
-  | { v: 'exp'; id: string; reqId?: string }
-  | { v: 'biblioteca' }
-  | { v: 'creador'; plantillaId?: string; requisito?: string; volverA?: Ruta }
-  | { v: 'importador'; requisito?: string }
-  | { v: 'usuarios' }
-  | { v: 'ajustes' }
-
-const RUTA_INICIAL: Ruta = { v: 'panel' }
 
 const SECCION_DE: Record<Ruta['v'], Seccion> = {
   panel: 'expedientes',
+  pendientes: 'pendientes',
   exp: 'expedientes',
   biblioteca: 'plantillas',
   creador: 'plantillas',
@@ -38,6 +30,7 @@ const SECCION_DE: Record<Ruta['v'], Seccion> = {
 
 const RUTA_DE: Record<Seccion, Ruta> = {
   expedientes: { v: 'panel' },
+  pendientes: { v: 'pendientes' },
   plantillas: { v: 'biblioteca' },
   usuarios: { v: 'usuarios' },
   ajustes: { v: 'ajustes' },
@@ -59,7 +52,9 @@ export default function App() {
     recargar,
   } = useApp()
 
-  const [ruta, setRuta] = useState<Ruta>(RUTA_INICIAL)
+  // La ruta arranca de la barra de direcciones, para que un enlace a un
+  // expediente abra ese expediente y recargar no eche a nadie a la cartera.
+  const [ruta, setRuta] = useState<Ruta>(() => desdePath(window.location.pathname))
   /** `'nuevo'`, el id del expediente que se edita, o `null`. */
   const [editando, setEditando] = useState<string | null>(null)
 
@@ -68,6 +63,19 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0 })
   }, [ruta.v, expedienteAbierto])
+
+  // La ruta manda sobre la URL…
+  useEffect(() => {
+    const camino = aPath(ruta)
+    if (window.location.pathname !== camino) window.history.pushState(null, '', camino)
+  }, [ruta])
+
+  // …y los botones de atrás y adelante mandan sobre la ruta.
+  useEffect(() => {
+    const alVolver = () => setRuta(desdePath(window.location.pathname))
+    window.addEventListener('popstate', alVolver)
+    return () => window.removeEventListener('popstate', alVolver)
+  }, [])
 
   const expediente = useMemo(
     () => (ruta.v === 'exp' ? expedientes.find((e) => e.id === ruta.id) ?? null : null),
@@ -84,6 +92,9 @@ export default function App() {
     await guardarPlantilla(plantilla)
     setRuta((ruta.v === 'creador' && ruta.volverA) || { v: 'biblioteca' })
   }
+
+  /** Ir a otro sitio sin apilar la misma pantalla dos veces en el historial. */
+  const ir = (destino: Ruta) => setRuta((previa) => (mismaRuta(previa, destino) ? previa : destino))
 
   const onGuardarExpediente = async (datos: ExpedienteDTO) => {
     if (editando && editando !== 'nuevo') {
@@ -112,7 +123,7 @@ export default function App() {
     <div className="app">
       <Margen
         seccion={seccion}
-        onIr={(s) => setRuta(RUTA_DE[s])}
+        onIr={(s) => ir(RUTA_DE[s])}
         onSalir={() => void salir()}
       />
 
@@ -136,8 +147,16 @@ export default function App() {
         {ruta.v === 'panel' && (
           <Panel
             expedientes={expedientes}
-            onAbrir={(id) => setRuta({ v: 'exp', id })}
+            onAbrir={(id) => ir({ v: 'exp', id })}
             onNuevo={() => setEditando('nuevo')}
+          />
+        )}
+
+        {ruta.v === 'pendientes' && (
+          <Pendientes
+            expedientes={expedientes}
+            plantillas={plantillas}
+            onAbrir={(id, reqId) => ir({ v: 'exp', id, reqId })}
           />
         )}
 
@@ -147,8 +166,8 @@ export default function App() {
             exp={expediente}
             plantillas={plantillas}
             abierto={ruta.reqId ?? null}
-            onAbrirRequisito={(reqId) => setRuta({ v: 'exp', id: expediente.id, reqId })}
-            onVolver={() => setRuta({ v: 'panel' })}
+            onAbrirRequisito={(reqId) => ir({ v: 'exp', id: expediente.id, reqId })}
+            onVolver={() => ir({ v: 'panel' })}
             onActualizar={(reqId, parche) => onActualizar(expediente.id, reqId, parche)}
             onEditar={() => setEditando(expediente.id)}
             onCrearPlantilla={(requisito) =>

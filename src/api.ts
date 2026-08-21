@@ -1,7 +1,9 @@
 import { API_HOSTNAME } from './constants'
 import type {
   ActualizarRequisitoDTO,
+  DatoExpediente,
   Documento,
+  GuardarDatoDTO,
   SubidaConcedida,
   ActualizarUsuarioDTO,
   Agencia,
@@ -206,6 +208,20 @@ export const actualizar_documento = (
     method: 'PATCH',
     body: JSON.stringify(datos),
   })
+
+/** Los datos que el expediente sabe, cada uno con el papel del que salió. */
+export const get_datos = (expId: string) =>
+  request<DatoExpediente[]>(`/api/expedientes/${expId}/datos`)
+
+/** Guarda varias observaciones de golpe: es como se rellena mirando un papel. */
+export const guardar_datos = (expId: string, datos: GuardarDatoDTO[]) =>
+  request<DatoExpediente[]>(`/api/expedientes/${expId}/datos`, {
+    method: 'PUT',
+    body: JSON.stringify({ datos }),
+  })
+
+export const borrar_dato = (expId: string, id: number) =>
+  request<void>(`/api/expedientes/${expId}/datos/${id}`, { method: 'DELETE' })
 
 export const borrar_documento = (expId: string, id: string) =>
   request<void>(`/api/expedientes/${expId}/documentos/${id}`, { method: 'DELETE' })

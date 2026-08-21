@@ -3353,3 +3353,229 @@ textarea.campo {
     box-shadow: none;
   }
 }
+
+/* ── La persecución ─────────────────────────────────────────────────────────
+   20 de los 31 requisitos dependen de que otra persona te mande algo. Estas
+   dos pantallas son esa mitad del trabajo: la de la cartera, con todo lo que
+   se espera, y la del caso, repartida por quién lo debe. */
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.filtro {
+  font-family: var(--dato);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r);
+  background: var(--papel);
+  color: var(--tinta-60);
+  cursor: pointer;
+}
+
+.filtro:hover {
+  border-color: var(--acento);
+  color: var(--acento);
+}
+
+.filtro.es-activo {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: #fff;
+}
+
+.esperas,
+.esperas__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.esperas__grupo + .esperas__grupo {
+  margin-top: 16px;
+}
+
+.esperas__persona {
+  display: block;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--linea-suave);
+}
+
+.espera {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 4px 9px 10px;
+  border-left: 3px solid transparent;
+}
+
+.espera + .espera {
+  border-top: 1px solid var(--linea-suave);
+}
+
+/* El ocre es el de «caduca pronto»: aquí significa lo mismo, que el tiempo
+   está jugando en contra. */
+.espera.es-insistir {
+  border-left-color: var(--timbre);
+  background: var(--papel-hueco);
+}
+
+.espera__que {
+  display: block;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.espera__nombre {
+  display: block;
+  font-weight: 500;
+  color: var(--tinta);
+}
+
+.espera__que:hover .espera__nombre {
+  color: var(--acento);
+}
+
+.espera__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.espera__donde {
+  font-size: 0.78rem;
+  color: var(--grafito);
+}
+
+.espera__cuando {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.espera__mandos {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Quién debe qué, dentro de un caso ──────────────────────────────────── */
+
+.deudas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.deuda {
+  border: 1px solid var(--linea);
+  border-radius: var(--r);
+  background: var(--papel);
+  overflow: hidden;
+}
+
+.deuda__cab {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--papel-hueco);
+  border-bottom: 1px solid var(--linea-suave);
+}
+
+.deuda__persona {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deuda__papel {
+  margin-left: auto;
+}
+
+.deuda__cuenta {
+  font-size: 0.95rem;
+  color: var(--acento);
+}
+
+.deuda__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.deuda__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-left: 3px solid transparent;
+}
+
+.deuda__item + .deuda__item {
+  border-top: 1px solid var(--linea-suave);
+}
+
+.deuda__item.es-insistir {
+  border-left-color: var(--timbre);
+}
+
+.deuda__que {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--tinta);
+  min-width: 0;
+}
+
+.deuda__que:hover {
+  color: var(--acento);
+}
+
+.deuda__que > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deuda__estado {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .espera {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .espera__cuando,
+  .espera__mandos {
+    grid-column: 1;
+  }
+}

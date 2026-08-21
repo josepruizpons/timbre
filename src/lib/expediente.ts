@@ -25,7 +25,8 @@ export function evaluar(
 ): RequisitoEvaluado {
   const def = POR_ID[reqId]
   const r: RegistroRequisito = registro ?? {
-    estado: 'pendiente', emitido: null, valores: {}, plantillaId: null, nota: ''
+    estado: 'pendiente', emitido: null, valores: {}, plantillaId: null, nota: '',
+    pedido: null, recordado: null
   }
   const base = {
     id: reqId,
@@ -34,6 +35,8 @@ export function evaluar(
     valores: r.valores || {},
     nota: r.nota || '',
     emitido: r.emitido || null,
+    pedido: r.pedido || null,
+    recordado: r.recordado || null,
     caduca: null as string | null,
     dias: null as number | null,
   }
