@@ -119,13 +119,22 @@ export function camposDelCuerpo(cuerpo: string, conocidos: Map<string, Campo>): 
   })
 }
 
-/** El campo que corresponde a un hallazgo aceptado. */
+/**
+ * El campo que corresponde a un hallazgo aceptado.
+ *
+ * Lo que escribe el agente entra como obligatorio: si el dato está escrito en
+ * el documento es porque hace falta, y un contrato con un hueco en blanco es un
+ * contrato defectuoso. Lo que se rellena solo desde el expediente no lo es —ya
+ * viene puesto, y si el expediente aún no lo tiene, el hueco vacío en la vista
+ * previa lo dice más claro que un aspa roja.
+ */
 export function campoDe(hallazgo: Hallazgo): Campo {
   return {
     clave: hallazgo.clave,
     etiqueta: hallazgo.etiqueta,
     tipo: hallazgo.tipo,
     grupo: hallazgo.grupo,
+    requerido: !hallazgo.auto,
     ...(hallazgo.auto ? { auto: hallazgo.auto } : {}),
     ...(hallazgo.opciones ? { opciones: hallazgo.opciones } : {}),
   }

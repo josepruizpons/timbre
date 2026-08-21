@@ -119,6 +119,8 @@ export default function DialogoVariable({
         etiqueta: etiquetaFinal || claveFinal,
         tipo: tipoFinal,
         grupo: datoExp?.grupo ?? campoVoc?.grupo ?? hallazgo?.grupo ?? 'Datos',
+        // Lo que hay que teclear es obligatorio; lo que se rellena solo, no.
+        requerido: !datoExp && !campoVoc?.auto,
         ...(datoExp ? { auto: datoExp.clave } : campoVoc?.auto ? { auto: campoVoc.auto } : {}),
         ...(datoExp?.opciones
           ? { opciones: datoExp.opciones }
