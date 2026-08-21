@@ -132,13 +132,15 @@ export async function zip(entradas: EntradaZip[]): Promise<Blob> {
 }
 
 /**
- * Deja el fichero en el ordenador del agente.
+ * Deja el fichero en el ordenador del agente, venga de un `Blob` que acabamos
+ * de componer o de una URL firmada del almacén.
  *
  * Con un enlace y no con `window.open`, porque después de un `await` el
  * navegador ya no reconoce el gesto del usuario y lo bloquea como emergente.
  */
-export function descargar(blob: Blob, nombre: string): void {
-  const url = URL.createObjectURL(blob)
+export function descargar(origen: Blob | string, nombre: string): void {
+  const propia = typeof origen !== 'string'
+  const url = propia ? URL.createObjectURL(origen) : origen
   const enlace = document.createElement('a')
   enlace.href = url
   enlace.download = nombre
@@ -147,7 +149,7 @@ export function descargar(blob: Blob, nombre: string): void {
   enlace.click()
   enlace.remove()
   // Sin margen, Safari cancela la descarga al revocar la URL demasiado pronto.
-  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  if (propia) setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
 /** Limpia un nombre para que valga como fichero en Windows, macOS y Linux. */

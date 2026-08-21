@@ -46,7 +46,11 @@ export function imprimir(nodo: HTMLElement, titulo: string): void {
   window.addEventListener('afterprint', limpiar)
   medio.addEventListener('change', alSalir)
 
+  // No se limpia justo después de `window.print()`. En la mayoría de los
+  // navegadores esa llamada bloquea hasta que se cierra el diálogo, pero en los
+  // que no, limpiar ahí borraría la hoja antes de que llegara al papel. Se
+  // espera al aviso del navegador; y si no llega ninguno, al minuto, que como
+  // mucho deja un div escondido sin efecto en la pantalla.
   window.print()
-  // Cuando `print()` es bloqueante ya se ha cerrado el diálogo al volver aquí.
-  limpiar()
+  setTimeout(limpiar, 60_000)
 }

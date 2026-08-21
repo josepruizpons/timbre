@@ -3,6 +3,7 @@ import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
 import { POR_ID } from '../data/catalog'
 import { diasHasta, fechaCorta } from '../lib/format'
+import { descargar } from '../lib/exportar/zip'
 import * as api from '../api'
 import { ApiError } from '../api'
 import { useApp } from '../contexts/app_context'
@@ -90,20 +91,10 @@ export default function Carpeta({ expedienteId, documentos, reqId = null, onCamb
     if (entrada.current) entrada.current.value = ''
   }
 
-  const descargar = async (d: Documento) => {
+  const bajar = async (d: Documento) => {
     try {
       const { url } = await api.url_de_descarga(expedienteId, d.id)
-      // `window.open` después de un `await` ha perdido el gesto del usuario y
-      // el navegador lo bloquea como ventana emergente. Un enlace con `download`
-      // no tiene ese problema, y el almacén ya devuelve el fichero como
-      // adjunto, así que descarga sin sacar al agente de la página.
-      const enlace = document.createElement('a')
-      enlace.href = url
-      enlace.download = d.nombreFichero ?? d.nombre
-      enlace.rel = 'noopener'
-      document.body.appendChild(enlace)
-      enlace.click()
-      enlace.remove()
+      descargar(url, d.nombreFichero ?? d.nombre)
     } catch (e) {
       avisar(e instanceof ApiError ? e.message : 'No se ha podido descargar.', 'mal')
     }
@@ -216,7 +207,7 @@ export default function Carpeta({ expedienteId, documentos, reqId = null, onCamb
 
                 <span className="documento__mandos">
                   {d.origen === 'recibido' && (
-                    <button className="btn es-plano" onClick={() => void descargar(d)}>
+                    <button className="btn es-plano" onClick={() => void bajar(d)}>
                       Descargar
                     </button>
                   )}
