@@ -3051,3 +3051,51 @@ textarea.campo {
     margin-top: 8px;
   }
 }
+
+/* ── Las dos partes de la compraventa ───────────────────────────────────────
+   Repartidas en una sola rejilla se leían como seis campos sueltos, y el
+   comprador acababa al lado del estado civil del vendedor. Son dos bloques, y
+   entre ellos la misma flecha que ordena cada fila de la cartera.            */
+
+.partes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.partes__lado {
+  display: grid;
+  gap: 10px;
+  padding: 13px 15px;
+  background: var(--papel-hueco);
+  border: 1px solid var(--linea-suave);
+  border-top: 2px solid var(--linea);
+}
+
+.partes__lado .campo-fila {
+  margin: 0;
+}
+
+.partes__quien {
+  color: var(--tinta);
+  letter-spacing: 0.17em;
+}
+
+.partes__flecha {
+  align-self: center;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--linea);
+}
+
+@media (max-width: 760px) {
+  .partes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .partes__flecha {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+}

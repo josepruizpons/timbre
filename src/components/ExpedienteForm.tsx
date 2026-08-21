@@ -164,22 +164,55 @@ export default function ExpedienteForm({ abierto, base, onGuardar, onCerrar }: E
           />
         </Apartado>
 
-        <Apartado titulo="Las partes">
-          <CampoTexto id="exp-vendedor" etiqueta="Vendedor" valor={txt('vendedor')} onChange={set('vendedor')} />
-          <CampoTexto id="exp-vendedor-nif" etiqueta="NIF del vendedor" valor={txt('vendedorNif')} onChange={set('vendedorNif')} />
-          <CampoSelect
-            id="exp-vendedor-ec" etiqueta="Estado civil del vendedor" vacio="Sin especificar"
-            valor={txt('vendedorEstadoCivil')} onChange={set('vendedorEstadoCivil')}
-            opciones={ESTADOS_CIVILES.map((e) => ({ valor: e, texto: e }))}
-          />
-          <CampoTexto id="exp-comprador" etiqueta="Comprador" valor={txt('comprador')} onChange={set('comprador')} />
-          <CampoTexto id="exp-comprador-nif" etiqueta="NIF del comprador" valor={txt('compradorNif')} onChange={set('compradorNif')} />
-          <CampoSelect
-            id="exp-comprador-ec" etiqueta="Estado civil del comprador" vacio="Sin especificar"
-            valor={txt('compradorEstadoCivil')} onChange={set('compradorEstadoCivil')}
-            opciones={ESTADOS_CIVILES.map((e) => ({ valor: e, texto: e }))}
-          />
-        </Apartado>
+        {/* Dos bloques, no seis campos sueltos: en una compraventa hay dos
+            partes y la operación va de una a la otra. La flecha es la misma que
+            ordena cada fila de la cartera. */}
+        <section className="apartado">
+          <header className="apartado__cab">
+            <span className="rotulo">Las partes</span>
+            <span className="apartado__nota">Quién vende y quién compra</span>
+          </header>
+
+          <div className="partes">
+            <div className="partes__lado">
+              <h4 className="partes__quien rotulo">Vende</h4>
+              <CampoTexto
+                id="exp-vendedor" etiqueta="Nombre y apellidos"
+                valor={txt('vendedor')} onChange={set('vendedor')}
+                placeholder="Montserrat Solé Ribas"
+              />
+              <CampoTexto
+                id="exp-vendedor-nif" etiqueta="NIF"
+                valor={txt('vendedorNif')} onChange={set('vendedorNif')}
+              />
+              <CampoSelect
+                id="exp-vendedor-ec" etiqueta="Estado civil" vacio="Sin especificar"
+                valor={txt('vendedorEstadoCivil')} onChange={set('vendedorEstadoCivil')}
+                opciones={ESTADOS_CIVILES.map((e) => ({ valor: e, texto: e }))}
+              />
+            </div>
+
+            <span className="partes__flecha" aria-hidden="true">→</span>
+
+            <div className="partes__lado">
+              <h4 className="partes__quien rotulo">Compra</h4>
+              <CampoTexto
+                id="exp-comprador" etiqueta="Nombre y apellidos"
+                valor={txt('comprador')} onChange={set('comprador')}
+                placeholder="Harpreet Kaur Singh"
+              />
+              <CampoTexto
+                id="exp-comprador-nif" etiqueta="NIF"
+                valor={txt('compradorNif')} onChange={set('compradorNif')}
+              />
+              <CampoSelect
+                id="exp-comprador-ec" etiqueta="Estado civil" vacio="Sin especificar"
+                valor={txt('compradorEstadoCivil')} onChange={set('compradorEstadoCivil')}
+                opciones={ESTADOS_CIVILES.map((e) => ({ valor: e, texto: e }))}
+              />
+            </div>
+          </div>
+        </section>
 
         <Apartado titulo="La operación">
           <CampoTexto
