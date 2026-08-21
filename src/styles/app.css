@@ -1187,6 +1187,18 @@ textarea.campo {
   flex-wrap: wrap;
 }
 
+/* Con tres cosas en la cabecera, el rótulo empuja el resto a la derecha para
+   que los mandos y la cuenta queden juntos y no uno en cada esquina. */
+.seccion__cab > .rotulo {
+  margin-right: auto;
+}
+
+.seccion__mandos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* ── Selector de plantillas ─────────────────────────────────────────────── */
 
 .plantillas {
@@ -3245,5 +3257,85 @@ textarea.campo {
 
   .subiendo {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+/* ── Impresión ──────────────────────────────────────────────────────────────
+   El PDF de un documento es esta hoja pasada por la impresora. Sale sola: el
+   resto de la aplicación se esconde y el clon de la hoja ocupa el papel. */
+
+.impresion {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm;
+  }
+
+  html,
+  body {
+    background: #fff;
+  }
+
+  body.es-imprimiendo > *:not(.impresion) {
+    display: none !important;
+  }
+
+  .impresion {
+    display: block;
+  }
+
+  /* La hoja en pantalla es un panel pegajoso con scroll propio. En papel no
+     hay panel ni scroll: hay una hoja que sigue hasta donde haga falta. */
+  .impresion .hoja {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #fff;
+  }
+
+  .impresion .hoja__cuerpo {
+    overflow: visible;
+    padding: 0;
+  }
+
+  .impresion .hoja__timbre {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Un encabezado suelto al pie de una página es una página desperdiciada. */
+  .doc__titulo,
+  .doc__clausula {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .doc__parrafo {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .doc__firmas {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Lo que falta tiene que verse también en papel: se lleva a una reunión para
+     repasarlo, y una ranura en blanco no dice nada. */
+  .impresion .ranura.es-vacia {
+    background: #f4efe2;
+    border-bottom: 1px dotted #8a7a4e;
+    color: #6d5f3c;
+  }
+
+  .impresion .ranura.es-mirada {
+    background: transparent;
+    box-shadow: none;
   }
 }

@@ -1,8 +1,8 @@
-import { useRef, useState, type DragEvent } from 'react'
+import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 
 import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
 import { POR_ID } from '../data/catalog'
-import { fechaCorta } from '../lib/format'
+import { diasHasta, fechaCorta } from '../lib/format'
 import * as api from '../api'
 import { ApiError } from '../api'
 import { useApp } from '../contexts/app_context'
@@ -18,6 +18,8 @@ interface Props {
   /** Se llama tras subir o borrar, para que el expediente recargue su estado. */
   onCambio?: () => void
   compacta?: boolean
+  /** Mandos que viven junto a los documentos, como descargarlos todos. */
+  extra?: ReactNode
 }
 
 const ICONO: Record<string, string> = {
@@ -29,6 +31,18 @@ const ICONO: Record<string, string> = {
   'image/tiff': 'TIF',
   'application/msword': 'DOC',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+}
+
+/**
+ * Hasta cuándo vale este papel. Sale de la fecha de emisión y de lo que dura
+ * ese tipo de documento, así que aparece sin que el agente teclee nada.
+ */
+function Vigencia({ caduca }: { caduca: string }) {
+  const dias = diasHasta(caduca)
+  if (dias === null) return null
+  if (dias < 0) return <span className="marca es-sello">caducado hace {Math.abs(dias)} d</span>
+  if (dias <= 20) return <span className="marca es-ocre">caduca en {dias} d</span>
+  return <span className="dato silente">vale hasta {fechaCorta(caduca)}</span>
 }
 
 function peso(bytes: number | null): string {
@@ -43,7 +57,7 @@ function peso(bytes: number | null): string {
  * carpeta: aquí cabe lo que cubre un requisito y lo que no, porque en la
  * carpeta de un caso real también hay papeles sueltos.
  */
-export default function Carpeta({ expedienteId, documentos, reqId = null, onCambio, compacta }: Props) {
+export default function Carpeta({ expedienteId, documentos, reqId = null, onCambio, compacta, extra }: Props) {
   const { avisar, esAdmin } = useApp()
   const { lista, cargando, error } = documentos
   const [encima, setEncima] = useState(false)
@@ -132,6 +146,7 @@ export default function Carpeta({ expedienteId, documentos, reqId = null, onCamb
         <span className="rotulo">
           {reqId ? 'Documentos de este requisito' : 'Documentos del expediente'}
         </span>
+        {extra}
         <label className="btn es-plano">
           Subir
           <input
@@ -194,6 +209,7 @@ export default function Carpeta({ expedienteId, documentos, reqId = null, onCamb
                     {d.origen === 'generado' && <span className="marca">de plantilla</span>}
                     {d.emisor && <span className="documento__emisor">{d.emisor}</span>}
                     {d.emitido && <span className="dato silente">{fechaCorta(d.emitido)}</span>}
+                    {d.caduca && <Vigencia caduca={d.caduca} />}
                     {d.tamano !== null && <span className="dato silente">{peso(d.tamano)}</span>}
                   </span>
                 </span>

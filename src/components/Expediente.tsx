@@ -7,6 +7,11 @@ import Formulario from './Formulario'
 import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
 import Carpeta from './Carpeta'
 import { useDocumentos } from '../lib/useDocumentos'
+import { imprimir } from '../lib/exportar/imprimir'
+import { comoDocx, nombreDocx } from '../lib/exportar/docx'
+import { comoFichero, descargar } from '../lib/exportar/zip'
+import { comoCarpeta } from '../lib/exportar/expediente'
+import * as api from '../api'
 import type { Documentos } from '../lib/useDocumentos'
 import {
   resumen,
@@ -18,6 +23,7 @@ import {
 import type { BloqueEvaluado, ResumenExpediente } from '../lib/expediente'
 import { euros, fechaCorta, fechaLarga, hoy } from '../lib/format'
 import { useApp } from '../contexts/app_context'
+import { ApiError } from '../api'
 import type {
   ActualizarRequisitoDTO,
   EstadoExpediente,
@@ -202,16 +208,76 @@ function Traza({ exp, rango }: { exp: ExpedienteType; rango: string }) {
   )
 }
 
+/**
+ * El expediente entero en un ZIP: lo que se manda a la notaría la semana antes
+ * de firmar. Dentro va un índice con lo que falta, que es la parte que hoy se
+ * resuelve por teléfono.
+ */
+function DescargarTodo({
+  exp,
+  res,
+  plantillas,
+  documentos,
+}: {
+  exp: ExpedienteType
+  res: ResumenExpediente
+  plantillas: Plantilla[]
+  documentos: Documentos
+}) {
+  const { agente, avisar } = useApp()
+  const [progreso, setProgreso] = useState<{ hechos: number; total: number } | null>(null)
+
+  const bajar = async () => {
+    if (progreso) return
+    setProgreso({ hechos: 0, total: documentos.lista.length })
+    try {
+      const carpeta = await comoCarpeta({
+        exp,
+        res,
+        plantillas,
+        documentos: documentos.lista,
+        agente,
+        urlDe: async (id) => (await api.url_de_descarga(exp.id, id)).url,
+        alAvanzar: (hechos, total) => setProgreso({ hechos, total }),
+      })
+      descargar(carpeta.blob, carpeta.nombre)
+      if (carpeta.fallidos.length) {
+        avisar(
+          `${carpeta.fallidos.length} ${
+            carpeta.fallidos.length === 1 ? 'documento no se pudo traer' : 'documentos no se pudieron traer'
+          } del almacén. El índice de la carpeta dice cuáles.`,
+          'mal'
+        )
+      } else {
+        avisar(`Expediente ${exp.referencia} descargado.`)
+      }
+    } catch (e) {
+      avisar(e instanceof ApiError ? e.message : 'No se ha podido armar la carpeta.', 'mal')
+    } finally {
+      setProgreso(null)
+    }
+  }
+
+  return (
+    <button className="btn es-plano" onClick={() => void bajar()} disabled={!!progreso}>
+      {progreso
+        ? `Reuniendo ${progreso.hechos}/${progreso.total}…`
+        : 'Descargar todo'}
+    </button>
+  )
+}
+
 interface VistaProps {
   exp: ExpedienteType
   res: ResumenExpediente
   bloques: BloqueEvaluado[]
+  plantillas: Plantilla[]
   onAbrir: (id: string) => void
   documentos: Documentos
   onCambioDocumentos: () => void
 }
 
-function Vista({ exp, res, bloques, onAbrir, documentos, onCambioDocumentos }: VistaProps) {
+function Vista({ exp, res, bloques, plantillas, onAbrir, documentos, onCambioDocumentos }: VistaProps) {
   const alertas = res.reqs.filter((r) => r.estado === 'caducado' || r.estado === 'caduca')
   const bloqueos = res.reqs.filter(
     (r) => r.def.critico && (r.estado === 'pendiente' || r.estado === 'caducado')
@@ -306,7 +372,12 @@ function Vista({ exp, res, bloques, onAbrir, documentos, onCambioDocumentos }: V
         </div>
       )}
 
-      <Carpeta expedienteId={exp.id} documentos={documentos} onCambio={onCambioDocumentos} />
+      <Carpeta
+        expedienteId={exp.id}
+        documentos={documentos}
+        onCambio={onCambioDocumentos}
+        extra={<DescargarTodo exp={exp} res={res} plantillas={plantillas} documentos={documentos} />}
+      />
 
       <Traza exp={exp} rango={`abierto ${fechaCorta(exp.abierto)}`} />
     </div>
@@ -324,8 +395,10 @@ interface RequisitoProps {
 }
 
 function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, documentos, onCambioDocumentos }: RequisitoProps) {
-  const { agente } = useApp()
+  const { agente, avisar } = useApp()
   const [campoMirado, setCampoMirado] = useState<string | null>(null)
+  const [generando, setGenerando] = useState(false)
+  const hoja = useRef<HTMLElement>(null)
   const compatibles = plantillas.filter((p) => p.requisito === req.id)
   const elegida = plantillas.find((p) => p.id === req.plantillaId) || null
 
@@ -349,6 +422,26 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, docum
   }
 
   const est = elegida ? completitud(elegida, valores) : null
+
+  /** El nombre con el que el documento sale al ordenador del agente. */
+  const nombreSalida = () => `${req.id} ${elegida!.nombre} (${exp.referencia})`
+
+  const enPdf = () => {
+    if (hoja.current) imprimir(hoja.current, comoFichero(nombreSalida()))
+  }
+
+  const enWord = async () => {
+    if (!elegida || generando) return
+    setGenerando(true)
+    try {
+      const blob = await comoDocx({ plantilla: elegida, valores, expedienteId: exp.id })
+      descargar(blob, nombreDocx(elegida, exp.referencia))
+    } catch {
+      avisar('No se ha podido componer el documento de Word.', 'mal')
+    } finally {
+      setGenerando(false)
+    }
+  }
   const conforme = req.estado === 'vigente'
 
   return (
@@ -485,6 +578,16 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, docum
             <span className="dato silente">
               {est!.requeridosListos}/{est!.requeridos} obligatorios
             </span>
+            <span className="seccion__mandos">
+              {/* El PDF es la hoja impresa; el .docx, la misma hoja abierta
+                  para retocarla en Word antes de mandarla. */}
+              <button className="btn es-plano" onClick={enPdf}>
+                PDF
+              </button>
+              <button className="btn es-plano" onClick={() => void enWord()} disabled={generando}>
+                {generando ? 'Componiendo…' : 'Word'}
+              </button>
+            </span>
           </div>
           <div className="banco">
             <Hoja
@@ -492,6 +595,7 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, docum
               valores={valores}
               expedienteId={exp.id}
               campoMirado={campoMirado}
+              refHoja={hoja}
             />
             <Formulario
               plantilla={elegida}
@@ -747,10 +851,13 @@ export default function Expediente({
                 : 'La operación no llegó a escriturarse. Se conserva la traza por si el inmueble vuelve a cartera.'}
             </p>
           </header>
+          {/* Un expediente firmado es justo cuando hace falta llevárselo
+              entero: al archivo de la agencia, o al cliente que lo pide. */}
           <Carpeta
             expedienteId={exp.id}
             documentos={documentos}
             onCambio={() => void recargarExpediente(exp.id)}
+            extra={<DescargarTodo exp={exp} res={res} plantillas={plantillas} documentos={documentos} />}
           />
 
           <Traza
@@ -783,6 +890,7 @@ export default function Expediente({
               exp={exp}
               res={res}
               bloques={bloques}
+              plantillas={plantillas}
               onAbrir={onAbrirRequisito}
               documentos={documentos}
               onCambioDocumentos={() => void recargarExpediente(exp.id)}

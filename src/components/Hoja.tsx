@@ -1,20 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, type RefObject } from 'react'
 
 import { waveBand, serial } from '../lib/guilloche'
-import { applyFilter } from '../lib/format'
-import type { Campo, Plantilla } from '../types'
-
-const tokenRe = () => /\{\{([a-zA-Z0-9_]+)(?:\|([a-z]+))?\}\}/g
-
-// Pie de firmas propio de cada tipo de documento. Los que no aparecen aquí no
-// se firman: son solicitudes o comunicaciones.
-const FIRMAS: Record<string, string[]> = {
-  'PT-05': ['La parte vendedora', 'La parte compradora'],
-  'PT-06': ['El cliente', 'Por la agencia'],
-  'IN-05': ['El administrador de fincas', 'Sello de la comunidad'],
-  'FS-01': ['El comprador declarante', ''],
-  'PT-03': ['El poderdante', '']
-}
+import { leer, type Trozo } from '../lib/documento'
+import { FIRMAS } from '../data/firmas'
+import type { Plantilla } from '../types'
 
 function Onda({ invertida = false }: { invertida?: boolean }) {
   const trazos = useMemo(
@@ -47,63 +36,18 @@ function Onda({ invertida = false }: { invertida?: boolean }) {
   )
 }
 
-type Segmento =
-  | { tipo: 'texto'; texto: string }
-  | { tipo: 'token'; clave: string; valor: string; etiqueta: string; mirado: boolean }
-
-/** Sustituye los tokens de una línea por sus valores, o por una ranura vacía. */
-function segmentar(
-  linea: string,
-  valores: Record<string, string> | undefined,
-  campos: Campo[] | undefined,
-  mirado: string | null
-): Segmento[] {
-  const salida: Segmento[] = []
-  let ultimo = 0
-  let m: RegExpExecArray | null
-  const re = tokenRe()
-  while ((m = re.exec(linea)) !== null) {
-    if (m.index > ultimo) salida.push({ tipo: 'texto', texto: linea.slice(ultimo, m.index) })
-    const clave = m[1]
-    const filtro = m[2]
-    const bruto = valores?.[clave]
-    const def = campos?.find((c) => c.clave === clave)
-    salida.push({
-      tipo: 'token',
-      clave,
-      valor: bruto !== undefined && bruto !== null && String(bruto).trim() !== ''
-        ? applyFilter(bruto, filtro)
-        : '',
-      etiqueta: def?.etiqueta || clave,
-      mirado: mirado === clave
-    })
-    ultimo = m.index + m[0].length
-  }
-  if (ultimo < linea.length) salida.push({ tipo: 'texto', texto: linea.slice(ultimo) })
-  return salida
-}
-
-interface LineaProps {
-  texto: string
-  valores: Record<string, string> | undefined
-  campos: Campo[] | undefined
-  mirado: string | null
-}
-
-function Linea({ texto, valores, campos, mirado }: LineaProps) {
-  const partes = segmentar(texto, valores, campos, mirado)
-  return partes.map((p, i) =>
-    p.tipo === 'texto' ? (
-      <span key={i}>{p.texto}</span>
-    ) : (
-      <span
-        key={i}
-        data-token={p.clave}
-        className={`ranura ${p.valor ? 'es-lleno' : 'es-vacia'}${p.mirado ? ' es-mirada' : ''}`}
-      >
-        {p.valor || p.etiqueta.toLowerCase()}
-      </span>
-    )
+/** Un trozo de línea: texto tal cual, o el hueco de un campo. */
+function Pieza({ trozo, mirado }: { trozo: Trozo; mirado: string | null }) {
+  if (trozo.tipo === 'texto') return <span>{trozo.texto}</span>
+  return (
+    <span
+      data-token={trozo.clave}
+      className={`ranura ${trozo.valor ? 'es-lleno' : 'es-vacia'}${
+        mirado === trozo.clave ? ' es-mirada' : ''
+      }`}
+    >
+      {trozo.valor || trozo.etiqueta.toLowerCase()}
+    </span>
   )
 }
 
@@ -116,21 +60,32 @@ interface HojaProps {
   valores: Record<string, string> | undefined
   expedienteId?: string
   campoMirado?: string | null
+  /** Referencia al papel, para poder mandarlo a la impresora. */
+  refHoja?: RefObject<HTMLElement | null>
 }
 
-export default function Hoja({ plantilla, valores, expedienteId = '', campoMirado = null }: HojaProps) {
+export default function Hoja({
+  plantilla,
+  valores,
+  expedienteId = '',
+  campoMirado = null,
+  refHoja,
+}: HojaProps) {
   const numero = useMemo(
     () => serial(plantilla?.id || 'plt', expedienteId),
     [plantilla?.id, expedienteId]
   )
+  const lineas = useMemo(
+    () => (plantilla ? leer(plantilla.cuerpo, valores, plantilla.campos) : []),
+    [plantilla, valores]
+  )
 
   if (!plantilla) return null
 
-  const lineas = plantilla.cuerpo.split('\n')
   const firmas = plantilla.requisito ? FIRMAS[plantilla.requisito] : undefined
 
   return (
-    <article className="hoja">
+    <article className="hoja" ref={refHoja}>
       <div className="hoja__timbre">
         <span className="hoja__leyenda">Timbre del Estado</span>
         <span className="hoja__serie">{numero}</span>
@@ -138,36 +93,13 @@ export default function Hoja({ plantilla, valores, expedienteId = '', campoMirad
       <Onda />
 
       <div className="hoja__cuerpo">
-        {lineas.map((cruda, i) => {
-          const linea = cruda.trimEnd()
-          if (linea === '') return null
-          if (linea.startsWith('# ')) {
-            return (
-              <h3 key={i} className="doc__titulo">
-                {linea.slice(2)}
-              </h3>
-            )
-          }
-          if (linea.startsWith('§ ')) {
-            return (
-              <h4 key={i} className="doc__clausula">
-                {linea.slice(2)}
-              </h4>
-            )
-          }
-          if (linea === '-') return <div key={i} className="doc__regla" />
-          if (linea.startsWith('> ')) {
-            return (
-              <p key={i} className="doc__nota">
-                <Linea texto={linea.slice(2)} valores={valores} campos={plantilla.campos} mirado={campoMirado} />
-              </p>
-            )
-          }
-          return (
-            <p key={i} className="doc__parrafo">
-              <Linea texto={linea} valores={valores} campos={plantilla.campos} mirado={campoMirado} />
-            </p>
-          )
+        {lineas.map((linea, i) => {
+          if (linea.tipo === 'regla') return <div key={i} className="doc__regla" />
+          const piezas = linea.trozos.map((t, j) => <Pieza key={j} trozo={t} mirado={campoMirado} />)
+          if (linea.tipo === 'titulo') return <h3 key={i} className="doc__titulo">{piezas}</h3>
+          if (linea.tipo === 'clausula') return <h4 key={i} className="doc__clausula">{piezas}</h4>
+          if (linea.tipo === 'nota') return <p key={i} className="doc__nota">{piezas}</p>
+          return <p key={i} className="doc__parrafo">{piezas}</p>
         })}
 
         {firmas && (

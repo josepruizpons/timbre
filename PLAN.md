@@ -22,7 +22,7 @@ Regla que gobierna todas las decisiones de este plan:
 | --- | --- | --- |
 | **Seguimiento** | Qué falta, qué caduca, qué bloquea la firma | ✅ Hecho |
 | **Generación** | Redactar los documentos propios y las peticiones | ✅ Hecho |
-| **Organización** | Guardar los papeles que llegan | ✅ Hecho (fase 1) |
+| **Organización** | Guardar los papeles que llegan | ✅ Hecho (fases 1 y 2) |
 | **Reclamación** | Saber quién debe qué y pedírselo | ❌ No existe |
 
 Lo construido hasta hoy: catálogo de 31 requisitos con reglas de aplicabilidad,
@@ -68,8 +68,10 @@ ponerse conforme solo, lo descarga y lo quita.
 
 - Editar los datos de un documento desde la interfaz —nombre, emisor, fecha de
   emisión—: la ruta existe (`PATCH`) pero no hay formulario.
-- Calcular `caduca` al subir, cruzando `emitido` con la vigencia del catálogo.
-  Hoy la columna existe y se queda nula.
+- ~~Calcular `caduca` al subir~~ — hecho el 21 de agosto. Sale de cruzar
+  `emitido` con la vigencia del catálogo, y se recalcula al corregir la fecha o
+  al mover el documento de requisito. La carpeta lo enseña: «caducado hace 4 d»,
+  «caduca en 12 d», «vale hasta 30 oct».
 - Reasignar un documento a otro requisito arrastrándolo.
 - Los documentos generados todavía no se crean como filas de `documentos`: el
   requisito sigue guardando su plantilla y sus valores como antes. Conviven sin
@@ -90,16 +92,40 @@ es la persecución.
 - El ciclo completo de un requisito es **pedir → esperar → recibir → vigilar
   vigencia**. Hoy se cubre «pedir» y a medias «vigilar».
 
-### Fase 2 · Descargas
+### Fase 2 · Descargas — ✅ hecha el 21 de agosto de 2026
 
 - **PDF imprimiendo la hoja**: `@media print` + `window.print()`. Cero
   dependencias, la hoja ya está diseñada como documento, y un contrato se
   imprime de todas formas.
-- **DOCX** con la librería `docx`, desde el mismo marcado `#`/`§`.
+- **DOCX** desde el mismo marcado `#`/`§`.
 - **ZIP del expediente entero**: lo que se manda a la notaría la semana antes de
   firmar, y que hoy se arma a mano adjuntando veinte ficheros a un correo.
 
-Independiente de la fase 1; se puede hacer antes o después.
+**Lo entregado.** Un escritor de ZIP propio (`src/lib/exportar/zip.ts`), sin
+dependencias, que sirve para las dos cosas: un .docx es un ZIP de cuatro XML y
+la carpeta del expediente es un ZIP de los papeles del caso. Se descartó la
+librería `docx` —medio mega para verter un marcado de cuatro símbolos— y se
+descartó `fflate` porque el ZIP sin comprimir cabe en dos cabeceras y los PDF y
+las fotos ya vienen comprimidos.
+
+El PDF se imprime en vez de generarse. La hoja ya está maquetada como documento
+—papel timbrado, ondas, justificado, pie de firmas— y el navegador la imprime
+con sus tipografías de verdad; cualquier generador tendría que rehacer esa
+maquetación y saldría peor. La hoja se clona a un contenedor propio antes de
+imprimir, porque en pantalla vive dentro de un panel con altura limitada y
+`overflow: hidden` que solo sacaría a papel el trozo visible.
+
+El ZIP del expediente lleva delante un **índice**, y ahí está lo que aporta: la
+lista de lo que falta viaja con la carpeta. Quien la recibe no tiene que abrir
+los veinte ficheros para saber qué no le has mandado.
+
+Lo comprueba `npm run exportar`: 25 comprobaciones, entre ellas que `mammoth`
+—el mismo lector con el que el importador se traga los Word de la agencia— abre
+el .docx que generamos, y que el índice no se contradice.
+
+**Lo que falta de esta fase.** Nadie ha abierto todavía el .docx en un Word de
+verdad: se ha comprobado contra `unzip` y contra `mammoth`, que son estrictos
+pero no son Word.
 
 ### Fase 3 · Datos con procedencia
 
