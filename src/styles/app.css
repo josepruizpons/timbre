@@ -3579,3 +3579,195 @@ textarea.campo {
     grid-column: 1;
   }
 }
+
+/* ── La ficha de datos ──────────────────────────────────────────────────────
+   Cada hecho conocido del caso, su valor y su fuente. Es la pantalla que se
+   mira cuando alguien pregunta algo por teléfono. */
+
+.ficha__grupo + .ficha__grupo {
+  margin-top: 18px;
+}
+
+.ficha__rotulo {
+  display: block;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--linea-suave);
+}
+
+.hechos,
+.fuentes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hecho {
+  border-left: 3px solid transparent;
+}
+
+.hecho + .hecho {
+  border-top: 1px solid var(--linea-suave);
+}
+
+/* El carmín es el de «caducado»: aquí también significa que algo no cuadra y
+   hay que mirarlo antes de firmar. */
+.hecho.es-discrepa {
+  border-left-color: var(--sello);
+  background: var(--papel-hueco);
+}
+
+.hecho__cab {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 1.4fr) auto;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.hecho__cab:disabled {
+  cursor: default;
+}
+
+.hecho__cab:not(:disabled):hover .hecho__etiqueta {
+  color: var(--acento);
+}
+
+.hecho__etiqueta {
+  color: var(--tinta-60);
+  font-size: 0.86rem;
+}
+
+.hecho__valor {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hecho__marcas {
+  display: inline-flex;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.fuentes {
+  padding: 0 10px 10px 22px;
+}
+
+.fuente {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 9px;
+  padding: 5px 0;
+  font-size: 0.84rem;
+  border-left: 2px solid var(--linea);
+  padding-left: 10px;
+}
+
+.fuente.es-papel {
+  border-left-color: var(--acento);
+}
+
+.fuente__valor {
+  font-weight: 600;
+}
+
+.fuente__segun {
+  color: var(--grafito);
+}
+
+button.fuente__segun {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--acento);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* ── Captura: el papel a un lado, sus datos al otro ─────────────────────── */
+
+.captura {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 18px;
+  min-height: 60vh;
+}
+
+.captura__papel {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: min(72vh, 900px);
+  border: 1px solid var(--linea);
+  border-radius: var(--r);
+  background: var(--papel-hueco);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.captura__visor {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.captura__imagen {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.captura__campos {
+  min-width: 0;
+}
+
+.captura__guia {
+  font-size: 0.84rem;
+  color: var(--grafito);
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--linea-suave);
+}
+
+.contraste {
+  margin: -6px 0 12px;
+  font-size: 0.78rem;
+}
+
+.contraste.es-igual {
+  color: var(--grafito);
+}
+
+.contraste.es-discrepa {
+  color: var(--sello);
+}
+
+@media (max-width: 900px) {
+  .captura {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .captura__papel {
+    position: static;
+    height: 44vh;
+  }
+
+  .hecho__cab {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+}

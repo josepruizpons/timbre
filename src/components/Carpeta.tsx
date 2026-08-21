@@ -2,6 +2,8 @@ import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 
 import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
 import DatosDocumento from './DatosDocumento'
+import Captura from './Captura'
+import { esquemaDe } from '../data/esquemas'
 import { POR_ID } from '../data/catalog'
 import { diasHasta, fechaCorta } from '../lib/format'
 import { descargar } from '../lib/exportar/zip'
@@ -9,7 +11,8 @@ import * as api from '../api'
 import { ApiError } from '../api'
 import { useApp } from '../contexts/app_context'
 import type { Documentos } from '../lib/useDocumentos'
-import type { Documento } from '../types'
+import type { Datos } from '../lib/useDatos'
+import type { Documento, Expediente } from '../types'
 
 interface Props {
   expedienteId: string
@@ -22,6 +25,9 @@ interface Props {
   compacta?: boolean
   /** Mandos que viven junto a los documentos, como descargarlos todos. */
   extra?: ReactNode
+  /** Si vienen, cada papel se puede leer hacia los datos del expediente. */
+  exp?: Expediente
+  datos?: Datos
 }
 
 const ICONO: Record<string, string> = {
@@ -59,13 +65,23 @@ function peso(bytes: number | null): string {
  * carpeta: aquí cabe lo que cubre un requisito y lo que no, porque en la
  * carpeta de un caso real también hay papeles sueltos.
  */
-export default function Carpeta({ expedienteId, documentos, reqId = null, onCambio, compacta, extra }: Props) {
+export default function Carpeta({
+  expedienteId,
+  documentos,
+  reqId = null,
+  onCambio,
+  compacta,
+  extra,
+  exp,
+  datos,
+}: Props) {
   const { avisar, esAdmin } = useApp()
   const { lista, cargando, error } = documentos
   const [encima, setEncima] = useState(false)
   const [subiendo, setSubiendo] = useState<{ nombre: string; pct: number } | null>(null)
   const [confirmar, setConfirmar] = useState<PeticionConfirmar | null>(null)
   const [editando, setEditando] = useState<Documento | null>(null)
+  const [leyendo, setLeyendo] = useState<Documento | null>(null)
   const entrada = useRef<HTMLInputElement>(null)
 
   const visibles = reqId ? lista.filter((d) => d.reqId === reqId) : lista
@@ -208,6 +224,14 @@ export default function Carpeta({ expedienteId, documentos, reqId = null, onCamb
                 </span>
 
                 <span className="documento__mandos">
+                  {/* Leer el papel hacia el expediente. Solo sale si el tipo de
+                      documento se sabe —por el requisito en el que está— y hay
+                      lista de lo que trae dentro. */}
+                  {exp && datos && d.origen === 'recibido' && esquemaDe(d.reqId).length > 0 && (
+                    <button className="btn es-plano es-acento" onClick={() => setLeyendo(d)}>
+                      Leer
+                    </button>
+                  )}
                   <button className="btn es-plano" onClick={() => setEditando(d)}>
                     Datos
                   </button>
@@ -236,6 +260,17 @@ export default function Carpeta({ expedienteId, documentos, reqId = null, onCamb
       )}
 
       {encima && <div className="carpeta__diana">Suelta para guardarlo en el expediente</div>}
+
+      {leyendo && exp && datos && (
+        <Captura
+          key={leyendo.id}
+          exp={exp}
+          documento={leyendo}
+          datos={datos.lista}
+          onGuardar={datos.guardar}
+          onCerrar={() => setLeyendo(null)}
+        />
+      )}
 
       {editando && (
         <DatosDocumento

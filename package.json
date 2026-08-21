@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "serve -s dist -l tcp://0.0.0.0:${PORT:-4173}",
-    "exportar": "tsx scripts/probar_exportar.ts"
+    "exportar": "tsx scripts/probar_exportar.ts",
+    "dominio": "tsx scripts/probar_dominio.ts"
   },
   "dependencies": {
     "mammoth": "^1.12.1",

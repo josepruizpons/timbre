@@ -8,12 +8,15 @@ import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
 import Carpeta from './Carpeta'
 import { PendientesDelCaso } from './Pendientes'
 import { useDocumentos } from '../lib/useDocumentos'
+import { useDatos } from '../lib/useDatos'
+import Ficha from './Ficha'
 import { imprimir } from '../lib/exportar/imprimir'
 import { comoDocx, nombreDocx } from '../lib/exportar/docx'
 import { comoFichero, descargar } from '../lib/exportar/zip'
 import { comoCarpeta } from '../lib/exportar/expediente'
 import * as api from '../api'
 import type { Documentos } from '../lib/useDocumentos'
+import type { Datos } from '../lib/useDatos'
 import {
   resumen,
   porBloque,
@@ -275,10 +278,11 @@ interface VistaProps {
   plantillas: Plantilla[]
   onAbrir: (id: string) => void
   documentos: Documentos
+  datos: Datos
   onCambioDocumentos: () => void
 }
 
-function Vista({ exp, res, bloques, plantillas, onAbrir, documentos, onCambioDocumentos }: VistaProps) {
+function Vista({ exp, res, bloques, plantillas, onAbrir, documentos, datos, onCambioDocumentos }: VistaProps) {
   const alertas = res.reqs.filter((r) => r.estado === 'caducado' || r.estado === 'caduca')
   const bloqueos = res.reqs.filter(
     (r) => r.def.critico && (r.estado === 'pendiente' || r.estado === 'caducado')
@@ -382,7 +386,12 @@ function Vista({ exp, res, bloques, plantillas, onAbrir, documentos, onCambioDoc
         documentos={documentos}
         onCambio={onCambioDocumentos}
         extra={<DescargarTodo exp={exp} res={res} plantillas={plantillas} documentos={documentos} />}
+        exp={exp}
+        datos={datos}
       />
+
+      {/* Después de la carpeta: primero los papeles, luego lo que dicen. */}
+      <Ficha exp={exp} datos={datos} />
 
       <Traza exp={exp} rango={`abierto ${fechaCorta(exp.abierto)}`} />
     </div>
@@ -396,10 +405,11 @@ interface RequisitoProps {
   onActualizar: ActualizarRequisito
   onCrearPlantilla: (reqId: string) => void
   documentos: Documentos
+  datos: Datos
   onCambioDocumentos: () => void
 }
 
-function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, documentos, onCambioDocumentos }: RequisitoProps) {
+function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, documentos, datos, onCambioDocumentos }: RequisitoProps) {
   const { agente, avisar } = useApp()
   const [campoMirado, setCampoMirado] = useState<string | null>(null)
   const [generando, setGenerando] = useState(false)
@@ -621,6 +631,8 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, docum
         reqId={req.id}
         onCambio={onCambioDocumentos}
         compacta
+        exp={exp}
+        datos={datos}
       />
 
       <div className="acciones">
@@ -687,6 +699,7 @@ export default function Expediente({
   const { esAdmin, actualizarExpediente, borrarExpediente, recargarExpediente } = useApp()
   // Una sola vez por expediente: la carpeta se pinta dos veces en esta pantalla.
   const documentos = useDocumentos(exp.id)
+  const datos = useDatos(exp.id)
   const [confirmar, setConfirmar] = useState<PeticionConfirmar | null>(null)
   const res = useMemo(() => resumen(exp), [exp])
   const bloques = useMemo(() => porBloque(res.reqs), [res.reqs])
@@ -865,6 +878,8 @@ export default function Expediente({
             extra={<DescargarTodo exp={exp} res={res} plantillas={plantillas} documentos={documentos} />}
           />
 
+          <Ficha exp={exp} datos={datos} />
+
           <Traza
             exp={exp}
             rango={`${fechaCorta(exp.abierto)} — ${fechaCorta(exp.cerrado)}`}
@@ -888,6 +903,7 @@ export default function Expediente({
               onActualizar={onActualizar}
               onCrearPlantilla={onCrearPlantilla}
               documentos={documentos}
+              datos={datos}
               onCambioDocumentos={() => void recargarExpediente(exp.id)}
             />
           ) : (
@@ -898,6 +914,7 @@ export default function Expediente({
               plantillas={plantillas}
               onAbrir={onAbrirRequisito}
               documentos={documentos}
+              datos={datos}
               onCambioDocumentos={() => void recargarExpediente(exp.id)}
             />
           )}

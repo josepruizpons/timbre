@@ -226,9 +226,16 @@ export const borrar_dato = (expId: string, id: number) =>
 export const borrar_documento = (expId: string, id: string) =>
   request<void>(`/api/expedientes/${expId}/documentos/${id}`, { method: 'DELETE' })
 
-/** Devuelve una URL firmada de vida corta, no el fichero. */
-export const url_de_descarga = (expId: string, id: string) =>
-  request<{ url: string }>(`/api/expedientes/${expId}/documentos/${id}/descarga`)
+/**
+ * Devuelve una URL firmada de vida corta, no el fichero.
+ *
+ * `vista` la pide para enseñar el papel en pantalla en vez de guardarlo: es lo
+ * que permite teclear sus datos mirándolo al lado.
+ */
+export const url_de_descarga = (expId: string, id: string, vista = false) =>
+  request<{ url: string }>(
+    `/api/expedientes/${expId}/documentos/${id}/descarga${vista ? '?vista=1' : ''}`
+  )
 
 // ─── Plantillas ──────────────────────────────────────────────────────────────
 
