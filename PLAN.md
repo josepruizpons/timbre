@@ -23,7 +23,7 @@ Regla que gobierna todas las decisiones de este plan:
 | **Seguimiento** | Qué falta, qué caduca, qué bloquea la firma | ✅ Hecho |
 | **Generación** | Redactar los documentos propios y las peticiones | ✅ Hecho |
 | **Organización** | Guardar los papeles que llegan | ✅ Hecho (fases 1 y 2) |
-| **Reclamación** | Saber quién debe qué y pedírselo | ❌ No existe |
+| **Reclamación** | Saber quién debe qué y pedírselo | ✅ Hecho (fase 1b) |
 
 Lo construido hasta hoy: catálogo de 31 requisitos con reglas de aplicabilidad,
 estados y caducidades, cartera ordenada por urgencia, plantillas con
@@ -82,7 +82,7 @@ ponerse conforme solo, lo descarga y lo quita.
   requisito sigue guardando su plantilla y sus valores como antes. Conviven sin
   estorbarse, pero hay que unificarlo.
 
-### Fase 1b · Pendientes por persona
+### Fase 1b · Pendientes por persona — ✅ hecha el 21 de agosto de 2026
 
 Barata, porque el dato ya está en el catálogo (`responsable`) y sin usar.
 
@@ -96,6 +96,20 @@ es la persecución.
   tercero**.
 - El ciclo completo de un requisito es **pedir → esperar → recibir → vigilar
   vigencia**. Hoy se cubre «pedir» y a medias «vigilar».
+
+**Lo entregado.** La pantalla **Esperas** enseña, de toda la cartera, lo que ya
+se ha pedido y no ha llegado, por orden de lo que lleva más tiempo fuera y
+agrupado por la persona que lo debe —con su nombre, no con su papel—. A la
+semana sin respuesta el renglón se pone en ocre; «Recordar» lo apunta y le
+compra otros siete días.
+
+Las fechas salen del cambio de estado, no de que nadie las teclee: pasar un
+requisito a «en curso» significa «se lo he pedido», y de ahí sale `pedido`.
+Dentro del caso, lo mismo repartido por persona, con «Pedir» y «Recordar».
+
+**Lo que falta.** El botón de pedir no compone todavía la solicitud desde la
+plantilla: apunta la fecha y deja traza, pero el documento hay que abrirlo
+aparte.
 
 ### Fase 2 · Descargas — ✅ hecha el 21 de agosto de 2026
 
@@ -136,15 +150,14 @@ verdad, y que en papel la hoja pierda el recorte que tiene en pantalla.
 verdad: se ha comprobado contra `unzip` y contra `mammoth`, que son estrictos
 pero no son Word.
 
-### Un hallazgo suelto
+### Un hallazgo suelto — ✅ resuelto
 
-La aplicación no lleva la ruta en la URL: recargar la página en un expediente
-devuelve a la lista. Salió montando los recorridos de navegador, pero afecta al
-agente más que a las pruebas —no puede guardar el enlace de un expediente ni
-mandárselo a un compañero, y cualquier recarga le echa fuera—. No es de ninguna
-fase; es una tarde de trabajo cuando toque.
+La aplicación no llevaba la ruta en la URL: recargar dentro de un expediente
+devolvía a la lista, y no se podía mandar el enlace de un caso a un compañero.
+Resuelto el 21 de agosto con `src/lib/ruta.ts`, sin librería: son siete
+pantallas y el servidor estático ya sirve `index.html` para cualquier ruta.
 
-### Fase 3 · Datos con procedencia
+### Fase 3 · Datos con procedencia — ✅ hecha el 21 de agosto de 2026
 
 Donde el expediente deja de ser un formulario y pasa a ser un registro de
 hechos. Es la fase que más cambia el producto.
@@ -164,12 +177,28 @@ hechos. Es la fase que más cambia el producto.
 - **Ascenso**: si tres plantillas piden el mismo dato aportado, deja de ser un
   dato del documento y pasa a ser uno del caso.
 
-Requiere una pieza de dominio que hoy no existe: **el esquema de datos de cada
-tipo de documento** (qué información trae una nota simple, una FEIN, un
-certificado energético). Son 31 tipos × ~6 campos. Misma forma que los `Campo[]`
-de las plantillas, así que el tipo y el formulario ya existen.
+**Lo entregado.** `src/data/esquemas.ts` con los 31 tipos de documento y 127
+campos, 17 de los cuales alimentan el expediente. `expediente_datos` guarda
+observaciones —«la nota simple dice 89,15»— y no verdades, con índices únicos
+parciales para que lo que teclea el agente y lo que dice cada papel sean filas
+distintas a propósito: esa convivencia **es** la discrepancia. La ficha junta
+los tres orígenes y pone delante lo que no cuadra.
 
-### Fase 4 · Captura desde el documento
+Dos cosas que encontró `npm run dominio` y que eran de fondo:
+
+- La superficie catastral y la de tasación no apuntaban al mismo hecho que la
+  registral, así que las tres convivían sin mirarse. El ejemplo de manual por el
+  que existe esta fase, y estaba roto.
+- `fechaFirma` significaba dos cosas: el tope que ponen las arras y la cita con
+  el notario. Con la misma clave se mezclaban en silencio. Ahora son dos claves
+  del mismo hecho, y que no cuadren es perder las arras.
+
+**Lo que falta.** El **ascenso** —si tres plantillas piden el mismo dato
+aportado, deja de ser un dato del documento y pasa a ser uno del caso— no está.
+Y los datos no se escriben de vuelta a las columnas del expediente: conviven,
+pero el formulario sigue siendo la fuente para ordenar la cartera.
+
+### Fase 4 · Captura desde el documento — ✅ hecha el 21 de agosto de 2026
 
 El agente migra el papel al sistema.
 
@@ -183,6 +212,20 @@ El agente migra el papel al sistema.
 - Prerrelleno por extracción de texto para los PDF digitales —notas simples,
   FEIN, certificados—, reutilizando las expresiones regulares del importador
   (`src/lib/importar/deteccion.ts`) giradas del revés. No es IA.
+
+**Lo entregado.** El botón «Leer» de cada papel recibido abre la pantalla
+partida. Cuando lo que se escribe no cuadra con lo que ya tenía el expediente no
+se pisa nada: se avisa ahí mismo y quedan las dos versiones.
+
+Un fallo que solo se vio mirando una captura de pantalla: `type="number"` no
+admite «89,15», así que el navegador devolvía cadena vacía y **el dato se perdía
+sin decir nada**. En castellano las cifras llevan coma; esos campos son de
+texto.
+
+**Lo que falta.** El prerrelleno por extracción de texto. Hoy se teclea todo
+mirando el papel, que es lo que hay que validar primero: si a Sergio teclear
+siete campos le parece trabajo extra, la extracción no lo arregla, solo lo
+disimula.
 
 ### Fase 5 · Plantillas de lectura
 
@@ -228,6 +271,25 @@ Preguntas para el agente que valide, por orden de cuánto cambian el diseño:
 8. De diez ventas, ¿en cuántas hay hipoteca, herencia, poder o no residente?
 9. **¿Qué haces hoy con los papeles?** Carpeta compartida, correo, papel. Esto
    decide contra qué compite Timbre y puede cambiar la fase 1.
+
+## Cómo se comprueba todo esto
+
+Sin entorno de pruebas: todo va contra producción, así que cada recorrido deja
+lo que toca y luego lo retira.
+
+| Dónde | Qué |
+| --- | --- |
+| `timbre/npm run dominio` | 17 · el catálogo, la persecución y la ficha, sin red |
+| `timbre/npm run exportar` | 25 · el ZIP, el .docx y el índice |
+| `timbre-api/npm run humo` | 47 · la API de siempre |
+| `timbre-api/npm run s3` | 11 · el almacén y el límite de permisos |
+| `timbre-api/npm run documentos` | 17 · el ciclo del documento y su caducidad |
+| `timbre-api/npm run datos` | 13 · la persecución y la procedencia |
+| `timbre/scripts/navegador/` | 27 · lo que solo se ve en un navegador |
+
+Los tres recorridos de navegador cubren lo que Node no alcanza: que el ZIP se
+arme bajando de verdad del bucket, que la hoja pierda en papel el recorte que
+tiene en pantalla, y que una cifra con coma decimal no se pierda por el camino.
 
 ## Riesgos
 

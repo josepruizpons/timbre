@@ -23,16 +23,31 @@ await page.goto(WEB, { waitUntil: 'networkidle' })
 await page.fill('input[type=email]', process.env.HUMO_EMAIL)
 await page.fill('input[type=password]', process.env.HUMO_PASSWORD)
 await page.click('button[type=submit]')
-await page.locator('button, a').filter({ hasText: /EXP-\d{4}-\d+/ }).first().waitFor({ timeout: 30000 })
-await page.locator('button, a').filter({ hasText: /EXP-\d{4}-\d+/ }).first().click()
+// El expediente de demostración no vale: ya tiene una nota simple vigente en
+// IN-01, y una nota nueva manda sobre una vieja — que es lo correcto, pero
+// tapa lo que aquí se quiere comprobar.
+const casos = () => page.locator('button, a').filter({ hasText: /EXP-\d{4}-\d+/ })
+await casos().first().waitFor({ timeout: 30000 })
+const cuantos = await casos().count()
+let entrado = false
+for (let i = 0; i < cuantos && !entrado; i++) {
+  // Se vuelve por la URL y no con «atrás»: ahora que la ruta está en el
+  // historial, atrás lleva al expediente, no a la cartera.
+  await page.goto(WEB, { waitUntil: 'networkidle' })
+  const fila = casos().nth(i)
+  await fila.waitFor({ timeout: 20000 })
+  if (/Rosselló/.test(await fila.innerText())) continue
+  await fila.click()
+  await page.locator('.req').first().waitFor({ timeout: 20000 })
+  await page.locator('.req').filter({ hasText: 'Nota simple registral' }).first().click()
+  await page.waitForTimeout(800)
+  entrado = (await page.locator('.carpeta.es-compacta .documento').count()) === 0
+}
 
 console.log('── Subir la nota simple en su requisito ──')
-await page.locator('.req').filter({ hasText: 'Nota simple registral' }).first().click()
-await page.waitForTimeout(600)
-
-await probar('el requisito arranca sin papel', async () => {
-  const t = await page.locator('.req.es-abierto').first().innerText()
-  if (/caducado|caduca en/.test(t)) throw new Error('ya venía con vigencia: ' + t.replace(/\n/g, ' '))
+await probar('hay un expediente con IN-01 vacío donde probar', () => {
+  if (!entrado) throw new Error('todos los expedientes tienen ya nota simple')
+  return 'IN-01 sin papel dentro'
 })
 
 await probar('sube el PDF dentro del requisito', async () => {

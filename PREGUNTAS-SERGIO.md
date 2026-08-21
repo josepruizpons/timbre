@@ -72,12 +72,28 @@ Cambia si hace falta algún acceso para el cliente o si Timbre es solo interno.
 Los CRM del mercado español cubren captación, portales y firma electrónica. Si
 alguno hace ya el seguimiento de requisitos, es información crítica.
 
+## 5 · Lo que trae cada papel
+
+**13. De una nota simple, ¿qué apuntas tú?**
+Timbre lleva ahora una lista de lo que trae dentro cada uno de los 31 tipos de
+documento: 127 campos en total, redactados igual que el catálogo y **igual de sin
+validar**. La nota simple tiene siete. Sobran o faltan seguro.
+
+**14. La superficie registral y la catastral casi nunca coinciden. ¿Te ha dado
+problemas alguna vez?**
+Timbre guarda las dos y avisa en vez de quedarse con la última. Si en la práctica
+nadie mira eso, esa parte sobra; si ha parado alguna firma, es de lo mejor que
+tiene.
+
+**15. ¿Cuánto tardas hoy en contestar «¿de cuántos metros era?» por teléfono?**
+Mide para qué sirve de verdad la ficha de datos.
+
 ---
 
 ## Cómo enseñárselo
 
-Hay una cuenta de demostración con diez expedientes y nueve plantillas de
-muestra. Si se le puede enseñar funcionando y que reaccione en caliente, valen
+Hay un guion de veinte minutos en `DEMO.md`, con un expediente preparado a
+propósito. Si se le puede enseñar funcionando y que reaccione en caliente, valen
 más sus quejas que sus respuestas a estas preguntas.
 
 Vale la pena fijarse en dos cosas mientras lo mira:
