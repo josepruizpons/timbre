@@ -14,6 +14,7 @@
 // huecos escritos: ____, [NOMBRE], XXXX).
 
 import { DATOS_EXPEDIENTE, DATO_POR_CLAVE } from '../../data/contexto'
+import { claveDesde } from './marcado'
 import { euros, eurosEnLetras, fechaLarga } from '../format'
 import { contextoDe } from '../expediente'
 import type { Expediente, TipoCampo, UserInfo } from '../../types'
@@ -219,6 +220,34 @@ const HUECOS: { re: RegExp; nombrado: boolean }[] = [
   { re: /\bX{4,}\b/gi, nombrado: false },
 ]
 
+/** «NOMBRE DEL PROPIETARIO» → «Nombre del propietario». */
+function enCaja(texto: string): string {
+  const letras = texto.replace(/[^\p{L}]/gu, '')
+  const altas = texto.replace(/[^\p{Lu}]/gu, '')
+  if (letras.length < 3 || altas.length / letras.length < 0.8) return texto
+  const bajo = texto.toLocaleLowerCase('es')
+  return bajo.charAt(0).toLocaleUpperCase('es') + bajo.slice(1)
+}
+
+/** Las últimas palabras antes de un hueco, que es lo único que lo describe. */
+function cola(texto: string, hasta: number, palabras = 3): string {
+  const trozo = texto
+    .slice(Math.max(0, hasta - 90), hasta)
+    .replace(/\{\{[^}]*\}\}/g, '')
+    // Otro hueco justo antes no describe nada y se comería el presupuesto de
+    // palabras, así que se quita para llegar a las que sí dicen algo.
+    .replace(/[_.…]{3,}/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  // Al quitar los huecos quedan comas y paréntesis sueltos que no describen
+  // nada. Solo cuentan los trozos con letra o cifra.
+  const partidas = trozo
+    .split(' ')
+    .filter((t) => /[\p{L}\p{N}]/u.test(t))
+    .slice(-palabras)
+  return partidas.join(' ') || 'el principio'
+}
+
 function clavePara(base: string, usadas: Set<string>): string {
   let clave = base || 'dato'
   let n = 2
@@ -333,15 +362,19 @@ export function detectar({ cuerpo, expediente, agente }: OpcionesDeteccion): Hal
       if (!libre(rango)) continue
       n += 1
 
-      // Un `[NOMBRE DEL VENDEDOR]` se llama a sí mismo; una raya de subrayado
-      // no, y cada una es un hueco distinto.
+      // Un `[NOMBRE DEL VENDEDOR]` se llama a sí mismo. Una raya de subrayado
+      // no dice nada, así que se nombra por lo que la precede: en un documento
+      // en blanco, el texto de alrededor es la única pista de qué va ahí.
       const interior = m[0].replace(/^[[<]+|[\]>]+$/g, '').trim()
-      const etiqueta = hueco.nombrado && interior ? interior : 'Hueco por rellenar'
+      const etiqueta =
+        hueco.nombrado && interior && interior.length <= 60
+          ? enCaja(interior)
+          : `Hueco tras «${cola(cuerpo, m.index)}»`
 
       candidatos.push({
         id: `hueco:${iHueco}:${hueco.nombrado ? interior.toLowerCase() : n}:${m.index}`,
-        clave: 'hueco',
-        etiqueta: etiqueta.length > 60 ? 'Hueco por rellenar' : etiqueta,
+        clave: hueco.nombrado && interior ? claveDesde(interior) || 'hueco' : 'hueco',
+        etiqueta,
         tipo: 'text',
         grupo: 'Datos',
         auto: null,
@@ -370,27 +403,28 @@ export function detectar({ cuerpo, expediente, agente }: OpcionesDeteccion): Hal
   const tomados: Rango[] = []
   const aceptados: Hallazgo[] = []
 
-  // Las claves de los campos del expediente están reservadas de antemano: un
-  // patrón no puede quedarse con «precio» y desplazar al dato de verdad.
-  const claves = new Set<string>(
-    ordenados.filter((c) => c.auto).map((c) => c.auto as string)
-  )
-
   for (const candidato of ordenados) {
     const libres = candidato.ocurrencias.filter((o) => !tomados.some((r) => solapa(r, o)))
     if (libres.length === 0) continue
     tomados.push(...libres)
-
-    aceptados.push({
-      ...candidato,
-      // Un campo del expediente conserva su clave tal cual, aunque salga dos
-      // veces con filtros distintos: es el mismo campo. Lo demás se numera.
-      clave: candidato.auto ?? clavePara(candidato.clave, claves),
-      ocurrencias: libres.sort((a, b) => a.inicio - b.inicio),
-    })
+    aceptados.push({ ...candidato, ocurrencias: libres.sort((a, b) => a.inicio - b.inicio) })
   }
 
-  return aceptados.sort((a, b) => a.ocurrencias[0].inicio - b.ocurrencias[0].inicio)
+  // Las claves se reparten al final y en orden de lectura, no en el orden en
+  // que se detectaron: con veinte huecos anónimos, ver «hueco7» antes que
+  // «hueco2» en la lista deja al agente sin saber cuál es cuál.
+  aceptados.sort((a, b) => a.ocurrencias[0].inicio - b.ocurrencias[0].inicio)
+
+  // Los campos del expediente reservan su clave de antemano: un patrón no puede
+  // quedarse con «precio» y desplazar al dato de verdad.
+  const claves = new Set<string>(aceptados.filter((c) => c.auto).map((c) => c.auto as string))
+
+  return aceptados.map((h) => ({
+    ...h,
+    // Un campo del expediente conserva su clave tal cual, aunque salga dos
+    // veces con filtros distintos: es el mismo campo. Lo demás se numera.
+    clave: h.auto ?? clavePara(h.clave, claves),
+  }))
 }
 
 /** Etiqueta legible de un dato del expediente, para el diálogo de nombrado. */
