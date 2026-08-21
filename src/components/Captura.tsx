@@ -141,10 +141,22 @@ export default function Captura({ exp, documento, datos, onGuardar, onCerrar }: 
           ) : esImagen ? (
             <img className="captura__imagen" src={url} alt={documento.nombre} />
           ) : (
-            // Un iframe y no un visor propio: el del navegador ya sabe hacer
-            // zoom, buscar texto y pasar páginas, que es justo lo que hace
-            // falta para copiar una cifra de una nota simple de ocho folios.
-            <iframe className="captura__visor" src={url} title={documento.nombre} />
+            // El visor del navegador y no uno propio: ya sabe hacer zoom,
+            // buscar texto y pasar páginas, que es justo lo que hace falta para
+            // copiar una cifra de una nota simple de ocho folios.
+            //
+            // `object` y no `iframe` porque si el navegador no sabe enseñar
+            // PDF —pasa en algunos móviles— enseña lo de dentro en vez de un
+            // rectángulo en blanco.
+            <object className="captura__visor" data={url} type="application/pdf">
+              <p className="carpeta__vacia silente">
+                Este navegador no sabe enseñar PDF aquí dentro.{' '}
+                <a href={url} target="_blank" rel="noopener noreferrer">
+                  Ábrelo en otra pestaña
+                </a>{' '}
+                y vuelve.
+              </p>
+            </object>
           )}
         </div>
 
@@ -198,7 +210,11 @@ export default function Captura({ exp, documento, datos, onGuardar, onCerrar }: 
                         etiqueta={campo.etiqueta}
                         valor={valor}
                         onChange={cambiar}
-                        tipo={campo.tipo === 'date' ? 'date' : campo.tipo === 'number' || campo.tipo === 'money' ? 'number' : 'text'}
+                        // Nunca `type="number"`: en España «89,15» se escribe
+                        // con coma, y un campo numérico se la come — el
+                        // navegador devuelve cadena vacía y el dato se
+                        // pierde sin decir nada.
+                        tipo={campo.tipo === 'date' ? 'date' : 'text'}
                         pista={campo.pista}
                       />
                     )}

@@ -34,6 +34,11 @@ generado; y verifica que en papel la hoja pierde el recorte y sale entera.
 corrige la fecha del papel a hace cien días y comprueba que el documento y el
 requisito pasan a caducado.
 
+`captura.mjs` corre sobre el expediente de demostración (`npm run demo` en
+timbre-api): abre un papel al lado de sus campos, comprueba que se enseña en vez
+de descargarse, y que una cifra con coma decimal se guarda entera. Lo deja como
+estaba.
+
 ## Cuidado con dos cosas
 
 **Medir el estilo con el medio equivocado.** En pantalla la hoja está recortada
@@ -43,3 +48,8 @@ llamar a `emulateMedia({ media: 'print' })` *antes* de medir.
 **El despliegue.** Un recorrido contra producción justo después de un push mide
 el build anterior. Esperar a que el paquete servido contenga algo nuevo de este
 commit.
+
+**`type="number"` en castellano.** «89,15» no cabe en un campo numérico: el
+navegador devuelve cadena vacía y el dato se pierde sin decir nada. Pasó de
+verdad con la superficie registral. Por eso `captura.mjs` teclea siempre una
+cifra con coma.

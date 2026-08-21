@@ -30,7 +30,9 @@ function Fuente({ o, onAbrir }: { o: Observacion; onAbrir?: (documentoId: string
         <span className="fuente__segun">{o.segun}</span>
       )}
       {o.dato.reqId && <span className="sigla">{o.dato.reqId}</span>}
-      <span className="dato silente">{fechaCorta(o.dato.actualizado.slice(0, 10))}</span>
+      {/* Cuándo se leyó, no la fecha del papel: son cosas distintas y
+          confundirlas haría dudar del dato. */}
+      <span className="dato silente">leído {fechaCorta(o.dato.actualizado.slice(0, 10))}</span>
     </li>
   )
 }
@@ -121,7 +123,11 @@ export default function Ficha({ exp, datos, onAbrirDocumento }: Props) {
             className={`btn es-plano${soloDudas ? ' es-sello' : ''}`}
             onClick={() => setSoloDudas((v) => !v)}
           >
-            {soloDudas ? 'Ver todos' : `Ver las ${discrepan.length} que discrepan`}
+            {soloDudas
+              ? 'Ver todos'
+              : discrepan.length === 1
+                ? 'Ver la que discrepa'
+                : `Ver las ${discrepan.length} que discrepan`}
           </button>
         )}
       </div>
