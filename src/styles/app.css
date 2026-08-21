@@ -3007,6 +3007,20 @@ textarea.campo {
   border-left-color: var(--grafito);
 }
 
+/* La misma tira, pero con una frase entera dentro en vez de las tres columnas
+   del diálogo de variables. */
+.consecuencia.es-texto {
+  display: block;
+  border-left-color: var(--acento);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.consecuencia.es-alerta {
+  border-left-color: var(--sello);
+  background: var(--sello-tenue);
+}
+
 .consecuencia__marca {
   font-size: 1.05rem;
   line-height: 1;

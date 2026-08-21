@@ -66,13 +66,18 @@ ponerse conforme solo, lo descarga y lo quita.
 
 **Lo que falta de esta fase**, y que no bloquea la 2:
 
-- Editar los datos de un documento desde la interfaz —nombre, emisor, fecha de
-  emisión—: la ruta existe (`PATCH`) pero no hay formulario.
+- ~~Editar los datos de un documento desde la interfaz~~ — hecho el 21 de
+  agosto. Nombre, fecha del papel, requisito que cubre, emisor y nota, con la
+  consecuencia de la fecha calculada mientras se teclea («vale 90 días: caduca
+  el 19 de noviembre, quedan 62»). Hacía falta para que la caducidad valiera de
+  algo: al subir se pone la fecha de hoy, y una nota simple pedida hace tres
+  semanas caduca tres semanas antes de lo que Timbre creía.
 - ~~Calcular `caduca` al subir~~ — hecho el 21 de agosto. Sale de cruzar
   `emitido` con la vigencia del catálogo, y se recalcula al corregir la fecha o
   al mover el documento de requisito. La carpeta lo enseña: «caducado hace 4 d»,
   «caduca en 12 d», «vale hasta 30 oct».
-- Reasignar un documento a otro requisito arrastrándolo.
+- Reasignar un documento a otro requisito arrastrándolo. Se puede ya desde el
+  formulario de datos; falta el gesto.
 - Los documentos generados todavía no se crean como filas de `documentos`: el
   requisito sigue guardando su plantilla y sus valores como antes. Conviven sin
   estorbarse, pero hay que unificarlo.

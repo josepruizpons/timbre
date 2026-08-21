@@ -1,6 +1,7 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 
 import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
+import DatosDocumento from './DatosDocumento'
 import { POR_ID } from '../data/catalog'
 import { diasHasta, fechaCorta } from '../lib/format'
 import { descargar } from '../lib/exportar/zip'
@@ -64,6 +65,7 @@ export default function Carpeta({ expedienteId, documentos, reqId = null, onCamb
   const [encima, setEncima] = useState(false)
   const [subiendo, setSubiendo] = useState<{ nombre: string; pct: number } | null>(null)
   const [confirmar, setConfirmar] = useState<PeticionConfirmar | null>(null)
+  const [editando, setEditando] = useState<Documento | null>(null)
   const entrada = useRef<HTMLInputElement>(null)
 
   const visibles = reqId ? lista.filter((d) => d.reqId === reqId) : lista
@@ -206,6 +208,9 @@ export default function Carpeta({ expedienteId, documentos, reqId = null, onCamb
                 </span>
 
                 <span className="documento__mandos">
+                  <button className="btn es-plano" onClick={() => setEditando(d)}>
+                    Datos
+                  </button>
                   {d.origen === 'recibido' && (
                     <button className="btn es-plano" onClick={() => void bajar(d)}>
                       Descargar
@@ -231,6 +236,21 @@ export default function Carpeta({ expedienteId, documentos, reqId = null, onCamb
       )}
 
       {encima && <div className="carpeta__diana">Suelta para guardarlo en el expediente</div>}
+
+      {editando && (
+        <DatosDocumento
+          key={editando.id}
+          expedienteId={expedienteId}
+          documento={editando}
+          onCerrar={() => setEditando(null)}
+          onGuardado={(guardado) => {
+            documentos.reemplazar(guardado)
+            avisar(`«${guardado.nombre}» al día.`)
+            // Cambiar la fecha o el requisito cambia el estado del expediente.
+            onCambio?.()
+          }}
+        />
+      )}
 
       <Confirmar peticion={confirmar} onCerrar={() => setConfirmar(null)} />
     </section>

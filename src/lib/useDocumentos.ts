@@ -9,6 +9,7 @@ export interface Documentos {
   cargando: boolean
   error: string
   anadir: (documento: Documento) => void
+  reemplazar: (documento: Documento) => void
   quitar: (id: string) => void
   recargar: () => Promise<void>
 }
@@ -57,9 +58,13 @@ export function useDocumentos(expedienteId: string): Documentos {
     setLista((prev) => [documento, ...prev])
   }, [])
 
+  const reemplazar = useCallback((documento: Documento) => {
+    setLista((prev) => prev.map((d) => (d.id === documento.id ? documento : d)))
+  }, [])
+
   const quitar = useCallback((id: string) => {
     setLista((prev) => prev.filter((d) => d.id !== id))
   }, [])
 
-  return { lista, cargando, error, anadir, quitar, recargar }
+  return { lista, cargando, error, anadir, reemplazar, quitar, recargar }
 }
