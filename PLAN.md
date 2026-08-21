@@ -22,7 +22,7 @@ Regla que gobierna todas las decisiones de este plan:
 | --- | --- | --- |
 | **Seguimiento** | Qué falta, qué caduca, qué bloquea la firma | ✅ Hecho |
 | **Generación** | Redactar los documentos propios y las peticiones | ✅ Hecho |
-| **Organización** | Guardar los papeles que llegan | ❌ Vacío |
+| **Organización** | Guardar los papeles que llegan | ✅ Hecho (fase 1) |
 | **Reclamación** | Saber quién debe qué y pedírselo | ❌ No existe |
 
 Lo construido hasta hoy: catálogo de 31 requisitos con reglas de aplicabilidad,
@@ -35,7 +35,7 @@ ficheros, el agente no cierra WhatsApp: los papeles le llegan por ahí.
 
 ## Fases
 
-### Fase 1 · Documentos
+### Fase 1 · Documentos — ✅ hecha el 21 de agosto de 2026
 
 Lo que cierra WhatsApp.
 
@@ -52,6 +52,28 @@ Lo que cierra WhatsApp.
   que no son un papel (la entrega de llaves es un acto).
 - Versiones: una nota simple caducada no se borra cuando llega la nueva. La
   sustituye y queda en el histórico.
+
+**Lo entregado.** Tabla `documentos` separada de `expediente_requisitos`, con un
+CHECK que garantiza la forma —un generado necesita plantilla, un recibido
+necesita fichero—. Subida directa al bucket con URL firmada, sin que el fichero
+pase por la API. PDF, imágenes (HEIC incluido, que es como llegan las fotos de
+un móvil) y Word, hasta 25 MB. La carpeta se pinta en el expediente y dentro de
+cada requisito. El estado del requisito sale del papel que hay dentro.
+
+Comprobado en producción: `npm run documentos` (13 comprobaciones sobre la API)
+y un recorrido por el navegador que sube un fichero de verdad, ve el requisito
+ponerse conforme solo, lo descarga y lo quita.
+
+**Lo que falta de esta fase**, y que no bloquea la 2:
+
+- Editar los datos de un documento desde la interfaz —nombre, emisor, fecha de
+  emisión—: la ruta existe (`PATCH`) pero no hay formulario.
+- Calcular `caduca` al subir, cruzando `emitido` con la vigencia del catálogo.
+  Hoy la columna existe y se queda nula.
+- Reasignar un documento a otro requisito arrastrándolo.
+- Los documentos generados todavía no se crean como filas de `documentos`: el
+  requisito sigue guardando su plantilla y sus valores como antes. Conviven sin
+  estorbarse, pero hay que unificarlo.
 
 ### Fase 1b · Pendientes por persona
 
