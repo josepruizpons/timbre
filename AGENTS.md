@@ -92,6 +92,25 @@ Dos cosas que parecen detalles y no lo son:
 - **`lastIndex`.** Un regex con `/g` a nivel de módulo lleva estado dentro. Aquí
   se construyen en cada uso (`tokenRe()`), no se reutilizan.
 
+## Formularios: una pregunta, un control
+
+En el diálogo de marcar variable había dos controles —«¿qué es este dato?» y
+«cómo se llama»— que preguntaban lo mismo, y por eso uno acababa siendo un
+desplegable de veintidós entradas. Ahora es un solo campo de texto que busca
+(`ui/Buscador.tsx`): escribes el nombre, y si coincide con un dato conocido lo
+eliges; si no coincide con nada, lo escrito **es** el nombre del campo nuevo.
+
+Debajo va solo la consecuencia de lo elegido, nunca las dos ramas a la vez: o se
+rellena solo desde el expediente —y entonces se enseña cómo quedará escrito de
+verdad, con el valor delante— o lo teclea el agente.
+
+Lo que decide esa rama es si hay algo que lo rellene (`auto`), no de qué lista
+salió la opción: un campo heredado de otra plantilla puede estar atado o no.
+
+Dos detalles del desplegable que costaron una pasada de pruebas cada uno: dentro
+de un diálogo lo recorta el `overflow`, así que va en posición fija y colocado a
+mano; y devolver el foco al campo tras elegir lo reabría encima de la respuesta.
+
 ## Marca blanca: nunca escribas un color de acción a mano
 
 Todo el color de acción sale de `--acento` y sus derivados, que `lib/marca.ts`
