@@ -227,7 +227,7 @@ mirando el papel, que es lo que hay que validar primero: si a Sergio teclear
 siete campos le parece trabajo extra, la extracción no lo arregla, solo lo
 disimula.
 
-### Fase 5 · Plantillas de lectura
+### Fase 5 · Plantillas de lectura — pendiente, y a propósito
 
 El espejo de las plantillas de redacción: una receta por tipo de documento y
 emisor («el número de finca va detrás de FINCA Nº»). Se enseña una vez y a
@@ -237,6 +237,16 @@ A partir de aquí entran las mejoras con modelo: OCR para escaneados, extracció
 contra el esquema de campos, clasificación de documentos sueltos, discrepancias
 semánticas. Con una regla: **ningún dato extraído se escribe sin que una persona
 lo confirme.**
+
+**Por qué se queda sin hacer.** Una receta de lectura se escribe mirando
+documentos reales de un Registro concreto —dónde cae el número de finca en *sus*
+notas simples—, y aquí no hay ni uno: los seis papeles de la demostración los
+genera un script. Escribir las recetas contra documentos inventados daría una
+fase entera que parece funcionar y falla con el primer papel de verdad.
+
+Lo que hace falta para empezarla no es tiempo de programación: son **veinte
+documentos reales de Sergio**, con permiso, y saber de qué Registro y de qué
+banco vienen. Eso también está en las preguntas.
 
 ## Decisiones tomadas
 
