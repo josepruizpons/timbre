@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react'
 
 import Modal from './ui/Modal'
-import { CampoSelect, CampoTexto } from './ui/Campos'
+import Buscador, { type OpcionBuscador } from './ui/Buscador'
+import { CampoSelect } from './ui/Campos'
 import { DATOS_EXPEDIENTE, DATO_POR_CLAVE } from '../data/contexto'
 import { claveDesde, recorte, repeticiones } from '../lib/importar/marcado'
 import type { Marca } from '../lib/importar/marcado'
 import type { Hallazgo, Rango } from '../lib/importar/deteccion'
+import type { ContextoAuto } from '../lib/expediente'
+import { applyFilter } from '../lib/format'
 import type { Campo, TipoCampo } from '../types'
 
 const TIPOS: { v: TipoCampo; n: string }[] = [
@@ -18,13 +21,29 @@ const TIPOS: { v: TipoCampo; n: string }[] = [
   { v: 'nif', n: 'DNI / NIE' },
 ]
 
-const FILTROS: { v: string; n: string }[] = [
-  { v: '', n: 'Tal cual' },
-  { v: 'eur', n: 'Importe: 425.000,00 €' },
-  { v: 'letra', n: 'En palabras: CUATROCIENTOS VEINTICINCO MIL EUROS' },
-  { v: 'fecha', n: 'Fecha larga: 8 de septiembre de 2026' },
-  { v: 'may', n: 'En mayúsculas' },
-]
+/**
+ * Los filtros que tienen sentido para cada tipo. Ofrecer «en palabras» para un
+ * NIF es ruido, y el ruido en un formulario se paga leyéndolo cada vez.
+ */
+const FILTROS: Record<string, { v: string; n: string }[]> = {
+  money: [
+    { v: 'eur', n: 'En cifra' },
+    { v: 'letra', n: 'En palabras' },
+    { v: '', n: 'El número pelado' },
+  ],
+  date: [
+    { v: 'fecha', n: 'En largo' },
+    { v: '', n: 'Tal cual' },
+  ],
+  text: [
+    { v: '', n: 'Tal cual' },
+    { v: 'may', n: 'En mayúsculas' },
+  ],
+  textarea: [
+    { v: '', n: 'Tal cual' },
+    { v: 'may', n: 'En mayúsculas' },
+  ],
+}
 
 export interface Peticion {
   /** Hallazgo propuesto, o `null` si el agente ha seleccionado a mano. */
@@ -41,6 +60,8 @@ interface Props {
   usadas: string[]
   /** Campos de las demás plantillas de la agencia. */
   vocabulario: Campo[]
+  /** Datos del expediente elegido, para enseñar cómo quedará escrito. */
+  contexto: ContextoAuto | null
   onMarcar: (marca: Marca, campo: Campo) => void
   onCerrar: () => void
 }
@@ -51,20 +72,20 @@ export default function DialogoVariable({
   campos,
   usadas,
   vocabulario,
+  contexto,
   onMarcar,
   onCerrar,
 }: Props) {
   const { hallazgo, rango } = peticion
   const literal = rango.literal
 
-  // `exp:clave` para un dato del expediente, `voc:clave` para uno del
-  // vocabulario de la agencia, `nuevo` para uno que se inventa aquí.
-  const [origen, setOrigen] = useState(() => {
-    if (hallazgo?.auto) return `exp:${hallazgo.auto}`
-    return 'nuevo'
-  })
-  const [etiqueta, setEtiqueta] = useState(
-    () => (hallazgo && !hallazgo.auto ? hallazgo.etiqueta : '')
+  // Un solo estado para el nombre. `origen` dice si ese nombre corresponde a un
+  // dato conocido —del expediente o de otra plantilla— o es uno nuevo.
+  const [origen, setOrigen] = useState<string | null>(
+    hallazgo?.auto ? `exp:${hallazgo.auto}` : null
+  )
+  const [nombre, setNombre] = useState(
+    hallazgo?.auto ? (DATO_POR_CLAVE[hallazgo.auto]?.etiqueta ?? '') : (hallazgo?.etiqueta ?? '')
   )
   const [tipo, setTipo] = useState<TipoCampo>(hallazgo?.tipo ?? 'text')
   const [filtro, setFiltro] = useState(hallazgo?.filtro ?? '')
@@ -74,33 +95,66 @@ export default function DialogoVariable({
   const etiquetas = useMemo(() => new Map(campos.map((c) => [c.clave, c.etiqueta])), [campos])
   const [elegidas, setElegidas] = useState<number[]>(() => todas.map((o) => o.inicio))
 
-  const datoExp = origen.startsWith('exp:') ? DATO_POR_CLAVE[origen.slice(4)] : null
-  const campoVoc = origen.startsWith('voc:')
+  const datoExp = origen?.startsWith('exp:') ? DATO_POR_CLAVE[origen.slice(4)] : null
+  const campoVoc = origen?.startsWith('voc:')
     ? vocabulario.find((c) => c.clave === origen.slice(4))
     : null
+  const conocido = datoExp ?? campoVoc ?? null
+  /** La clave del expediente que lo rellena, venga de donde venga. */
+  const autoClave = datoExp?.clave ?? campoVoc?.auto ?? null
 
-  const etiquetaFinal = datoExp?.etiqueta ?? campoVoc?.etiqueta ?? etiqueta.trim()
-  const claveFinal = datoExp?.clave ?? campoVoc?.clave ?? claveDesde(etiqueta)
+  const claveFinal = datoExp?.clave ?? campoVoc?.clave ?? claveDesde(nombre)
   const tipoFinal = datoExp?.tipo ?? campoVoc?.tipo ?? tipo
 
-  const cambiarOrigen = (valor: string) => {
+  const opciones: OpcionBuscador[] = useMemo(() => {
+    const libres = (clave: string) => !usadas.includes(clave) || clave === hallazgo?.auto
+    return [
+      ...DATOS_EXPEDIENTE.filter((d) => libres(d.clave)).map((d) => ({
+        valor: `exp:${d.clave}`,
+        etiqueta: d.etiqueta,
+        grupo: d.grupo,
+        nota: 'se rellena solo',
+      })),
+      ...vocabulario
+        .filter((c) => libres(c.clave) && !DATO_POR_CLAVE[c.clave])
+        .map((c) => ({
+          valor: `voc:${c.clave}`,
+          etiqueta: c.etiqueta,
+          grupo: 'De tus plantillas',
+        })),
+    ]
+  }, [usadas, vocabulario, hallazgo])
+
+  const cambiarOrigen = (valor: string | null) => {
     setOrigen(valor)
     setError('')
-    if (valor.startsWith('exp:')) {
+    if (valor?.startsWith('exp:')) {
       const dato = DATO_POR_CLAVE[valor.slice(4)]
-      if (dato?.filtro) setFiltro(dato.filtro)
+      setFiltro(dato?.filtro ?? '')
+    } else if (valor === null) {
+      setFiltro('')
     }
   }
 
+  const filtrosUtiles = FILTROS[tipoFinal] ?? null
+
+  /** Cómo quedará escrito de verdad, con el dato del expediente delante. */
+  const vistaPrevia = useMemo(() => {
+    if (!autoClave || !contexto) return null
+    const bruto = contexto[autoClave]
+    if (bruto === null || bruto === undefined || bruto === '') return null
+    return applyFilter(bruto, filtro || undefined)
+  }, [autoClave, contexto, filtro])
+
   const confirmar = () => {
-    if (!claveFinal) {
+    if (!nombre.trim() || !claveFinal) {
       setError('Ponle un nombre al dato.')
       return
     }
-    // Reutilizar una clave del expediente o del vocabulario está bien —es el
-    // mismo dato—; inventarse una que ya existe con otro significado, no.
-    if (origen === 'nuevo' && usadas.includes(claveFinal)) {
-      setError(`Ya hay un campo que se llama «${claveFinal}» en esta plantilla.`)
+    // Reutilizar una clave conocida está bien —es el mismo dato—; inventarse
+    // una que ya existe con otro significado, no.
+    if (!conocido && usadas.includes(claveFinal)) {
+      setError(`Ya hay un campo que se llama «${nombre.trim()}» en esta plantilla.`)
       return
     }
     if (elegidas.length === 0) {
@@ -116,7 +170,7 @@ export default function DialogoVariable({
       },
       {
         clave: claveFinal,
-        etiqueta: etiquetaFinal || claveFinal,
+        etiqueta: conocido ? (datoExp?.etiqueta ?? campoVoc!.etiqueta) : nombre.trim(),
         tipo: tipoFinal,
         grupo: datoExp?.grupo ?? campoVoc?.grupo ?? hallazgo?.grupo ?? 'Datos',
         // Lo que hay que teclear es obligatorio; lo que se rellena solo, no.
@@ -130,10 +184,6 @@ export default function DialogoVariable({
       }
     )
   }
-
-  const disponibles = DATOS_EXPEDIENTE.filter(
-    (d) => !usadas.includes(d.clave) || d.clave === hallazgo?.auto
-  )
 
   return (
     <Modal
@@ -168,58 +218,66 @@ export default function DialogoVariable({
         </p>
       )}
 
-      <div className="apartado__rejilla">
-        <CampoSelect
-          id="var-origen"
-          etiqueta="¿Qué es este dato?"
-          valor={origen}
-          onChange={cambiarOrigen}
-          pista={
-            datoExp
-              ? 'Se rellenará solo con los datos del expediente.'
-              : 'Lo escribirá el agente al usar la plantilla.'
-          }
-          opciones={[
-            { valor: 'nuevo', texto: 'Un dato nuevo, lo escribe el agente' },
-            ...disponibles.map((d) => ({
-              valor: `exp:${d.clave}`,
-              texto: `Del expediente · ${d.etiqueta}`,
-            })),
-            ...vocabulario
-              .filter((c) => !usadas.includes(c.clave) && !DATO_POR_CLAVE[c.clave])
-              .map((c) => ({ valor: `voc:${c.clave}`, texto: `De tus plantillas · ${c.etiqueta}` })),
-          ]}
-        />
+      <Buscador
+        etiqueta="Cómo se llama"
+        requerido
+        autoFoco={!hallazgo?.auto}
+        texto={nombre}
+        onTexto={setNombre}
+        valor={origen}
+        onValor={cambiarOrigen}
+        opciones={opciones}
+        placeholder="Escribe el nombre, o busca entre los datos del expediente"
+        crear={(t) => `Usar «${t}» como dato nuevo`}
+        error={error || undefined}
+      />
 
-        {origen === 'nuevo' ? (
-          <>
-            <CampoTexto
-              id="var-etiqueta"
-              etiqueta="Cómo se llama"
-              requerido
-              valor={etiqueta}
-              onChange={setEtiqueta}
-              placeholder="Domicilio de notificaciones"
-              pista={claveFinal ? `Token: {{${claveFinal}}}` : 'El nombre que verá el agente.'}
-            />
-            <CampoSelect
-              id="var-tipo"
-              etiqueta="Tipo de dato"
-              valor={tipo}
-              onChange={(v) => setTipo(v as TipoCampo)}
-              opciones={TIPOS.map((t) => ({ valor: t.v, texto: t.n }))}
-            />
-          </>
-        ) : (
+      {/* Debajo va solo la consecuencia de lo elegido, nunca las dos a la vez.
+          Y lo que la decide es si algo lo rellena, no de qué lista salió. */}
+      <div className={`consecuencia ${autoClave ? 'es-auto' : 'es-manual'}`}>
+        <span className="consecuencia__marca" aria-hidden="true">
+          {autoClave ? '↺' : '✎'}
+        </span>
+
+        <div className="consecuencia__cuerpo">
+          {autoClave ? (
+            <>
+              <p className="consecuencia__texto">
+                Se rellena solo con <b>{(DATO_POR_CLAVE[autoClave]?.etiqueta ?? autoClave).toLowerCase()}</b>{' '}
+                del expediente. El agente no lo teclea.
+              </p>
+              {vistaPrevia && (
+                <p className="consecuencia__previa">
+                  Quedará escrito: <b>{vistaPrevia}</b>
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="consecuencia__texto">
+              Lo escribirá el agente al usar la plantilla, y es obligatorio.
+              {campoVoc && ' Ya lo usas en otras plantillas.'}
+              {claveFinal && <code className="consecuencia__token">{`{{${claveFinal}}}`}</code>}
+            </p>
+          )}
+        </div>
+
+        {autoClave && filtrosUtiles ? (
           <CampoSelect
             id="var-filtro"
-            etiqueta="Cómo se escribe aquí"
+            etiqueta="Cómo se escribe"
             valor={filtro}
             onChange={setFiltro}
-            pista="El mismo dato puede ir en cifra en un sitio y en letra en otro."
-            opciones={FILTROS.map((f) => ({ valor: f.v, texto: f.n }))}
+            opciones={filtrosUtiles.map((f) => ({ valor: f.v, texto: f.n }))}
           />
-        )}
+        ) : !autoClave ? (
+          <CampoSelect
+            id="var-tipo"
+            etiqueta="Tipo de dato"
+            valor={tipoFinal}
+            onChange={(v) => setTipo(v as TipoCampo)}
+            opciones={TIPOS.map((t) => ({ valor: t.v, texto: t.n }))}
+          />
+        ) : null}
       </div>
 
       {todas.length > 1 && (
@@ -268,13 +326,6 @@ export default function DialogoVariable({
             })}
           </ul>
         </section>
-      )}
-
-      {error && (
-        <div className="aviso es-sello" style={{ marginBottom: 0 }}>
-          <span className="aviso__rotulo">Revisa</span>
-          <span>{error}</span>
-        </div>
       )}
     </Modal>
   )

@@ -4,6 +4,7 @@ import HojaMarcable from './HojaMarcable'
 import DialogoVariable, { type Peticion } from './DialogoVariable'
 import { CampoSelect, CampoTexto } from './ui/Campos'
 import { CATALOGO, BLOQUES } from '../data/catalog'
+import { contextoDe } from '../lib/expediente'
 import { detectar } from '../lib/importar/deteccion'
 import type { Hallazgo, Rango } from '../lib/importar/deteccion'
 import { desdeDocx, desdeHtml, desdeTexto } from '../lib/importar/documento'
@@ -61,6 +62,11 @@ export default function Importador({ requisitoSugerido, onGuardada, onCancelar }
   // campo desaparece solo y no queda basura al guardar.
   const campos = useMemo(() => camposDelCuerpo(cuerpo, definiciones), [cuerpo, definiciones])
   const vocabulario = useMemo(() => vocabularioDe(plantillas), [plantillas])
+  // El diálogo lo usa para enseñar cómo quedará escrito cada dato de verdad.
+  const contexto = useMemo(
+    () => (expediente ? contextoDe(expediente, agente) : null),
+    [expediente, agente]
+  )
 
   const sinAceptar = hallazgos.length
   const seguros = hallazgos.filter((h) => h.confianza === 'alta')
@@ -480,6 +486,7 @@ export default function Importador({ requisitoSugerido, onGuardada, onCancelar }
           campos={campos}
           usadas={campos.map((c) => c.clave)}
           vocabulario={vocabulario}
+          contexto={contexto}
           onMarcar={aplicar}
           onCerrar={() => setPeticion(null)}
         />
