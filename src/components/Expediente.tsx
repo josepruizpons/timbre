@@ -6,6 +6,8 @@ import Hoja from './Hoja'
 import Formulario from './Formulario'
 import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
 import Carpeta from './Carpeta'
+import { useDocumentos } from '../lib/useDocumentos'
+import type { Documentos } from '../lib/useDocumentos'
 import {
   resumen,
   porBloque,
@@ -205,10 +207,11 @@ interface VistaProps {
   res: ResumenExpediente
   bloques: BloqueEvaluado[]
   onAbrir: (id: string) => void
+  documentos: Documentos
   onCambioDocumentos: () => void
 }
 
-function Vista({ exp, res, bloques, onAbrir, onCambioDocumentos }: VistaProps) {
+function Vista({ exp, res, bloques, onAbrir, documentos, onCambioDocumentos }: VistaProps) {
   const alertas = res.reqs.filter((r) => r.estado === 'caducado' || r.estado === 'caduca')
   const bloqueos = res.reqs.filter(
     (r) => r.def.critico && (r.estado === 'pendiente' || r.estado === 'caducado')
@@ -303,7 +306,7 @@ function Vista({ exp, res, bloques, onAbrir, onCambioDocumentos }: VistaProps) {
         </div>
       )}
 
-      <Carpeta expedienteId={exp.id} onCambio={onCambioDocumentos} />
+      <Carpeta expedienteId={exp.id} documentos={documentos} onCambio={onCambioDocumentos} />
 
       <Traza exp={exp} rango={`abierto ${fechaCorta(exp.abierto)}`} />
     </div>
@@ -316,10 +319,11 @@ interface RequisitoProps {
   plantillas: Plantilla[]
   onActualizar: ActualizarRequisito
   onCrearPlantilla: (reqId: string) => void
+  documentos: Documentos
   onCambioDocumentos: () => void
 }
 
-function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, onCambioDocumentos }: RequisitoProps) {
+function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, documentos, onCambioDocumentos }: RequisitoProps) {
   const { agente } = useApp()
   const [campoMirado, setCampoMirado] = useState<string | null>(null)
   const compatibles = plantillas.filter((p) => p.requisito === req.id)
@@ -504,6 +508,7 @@ function Requisito({ exp, req, plantillas, onActualizar, onCrearPlantilla, onCam
           acordarse de marcar nada. */}
       <Carpeta
         expedienteId={exp.id}
+        documentos={documentos}
         reqId={req.id}
         onCambio={onCambioDocumentos}
         compacta
@@ -571,6 +576,8 @@ export default function Expediente({
   onEditar
 }: ExpedienteProps) {
   const { esAdmin, actualizarExpediente, borrarExpediente, recargarExpediente } = useApp()
+  // Una sola vez por expediente: la carpeta se pinta dos veces en esta pantalla.
+  const documentos = useDocumentos(exp.id)
   const [confirmar, setConfirmar] = useState<PeticionConfirmar | null>(null)
   const res = useMemo(() => resumen(exp), [exp])
   const bloques = useMemo(() => porBloque(res.reqs), [res.reqs])
@@ -740,7 +747,11 @@ export default function Expediente({
                 : 'La operación no llegó a escriturarse. Se conserva la traza por si el inmueble vuelve a cartera.'}
             </p>
           </header>
-          <Carpeta expedienteId={exp.id} onCambio={() => void recargarExpediente(exp.id)} />
+          <Carpeta
+            expedienteId={exp.id}
+            documentos={documentos}
+            onCambio={() => void recargarExpediente(exp.id)}
+          />
 
           <Traza
             exp={exp}
@@ -764,6 +775,7 @@ export default function Expediente({
               plantillas={plantillas}
               onActualizar={onActualizar}
               onCrearPlantilla={onCrearPlantilla}
+              documentos={documentos}
               onCambioDocumentos={() => void recargarExpediente(exp.id)}
             />
           ) : (
@@ -772,6 +784,7 @@ export default function Expediente({
               res={res}
               bloques={bloques}
               onAbrir={onAbrirRequisito}
+              documentos={documentos}
               onCambioDocumentos={() => void recargarExpediente(exp.id)}
             />
           )}

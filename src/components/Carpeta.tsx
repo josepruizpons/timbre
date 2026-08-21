@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent } from 'react'
+import { useRef, useState, type DragEvent } from 'react'
 
 import Confirmar, { type PeticionConfirmar } from './ui/Confirmar'
 import { POR_ID } from '../data/catalog'
@@ -6,10 +6,13 @@ import { fechaCorta } from '../lib/format'
 import * as api from '../api'
 import { ApiError } from '../api'
 import { useApp } from '../contexts/app_context'
+import type { Documentos } from '../lib/useDocumentos'
 import type { Documento } from '../types'
 
 interface Props {
   expedienteId: string
+  /** La lista viene de fuera: se pide una sola vez por expediente. */
+  documentos: Documentos
   /** Si viene, la carpeta se limita a un requisito y sube dentro de él. */
   reqId?: string | null
   /** Se llama tras subir o borrar, para que el expediente recargue su estado. */
@@ -40,31 +43,15 @@ function peso(bytes: number | null): string {
  * carpeta: aquí cabe lo que cubre un requisito y lo que no, porque en la
  * carpeta de un caso real también hay papeles sueltos.
  */
-export default function Carpeta({ expedienteId, reqId = null, onCambio, compacta }: Props) {
+export default function Carpeta({ expedienteId, documentos, reqId = null, onCambio, compacta }: Props) {
   const { avisar, esAdmin } = useApp()
-  const [documentos, setDocumentos] = useState<Documento[]>([])
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
+  const { lista, cargando, error } = documentos
   const [encima, setEncima] = useState(false)
   const [subiendo, setSubiendo] = useState<{ nombre: string; pct: number } | null>(null)
   const [confirmar, setConfirmar] = useState<PeticionConfirmar | null>(null)
   const entrada = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    let vivo = true
-    api
-      .get_documentos(expedienteId)
-      .then((d) => vivo && setDocumentos(d))
-      .catch((e: unknown) =>
-        vivo && setError(e instanceof ApiError ? e.message : 'No se han podido cargar los documentos.')
-      )
-      .finally(() => vivo && setCargando(false))
-    return () => {
-      vivo = false
-    }
-  }, [expedienteId])
-
-  const visibles = reqId ? documentos.filter((d) => d.reqId === reqId) : documentos
+  const visibles = reqId ? lista.filter((d) => d.reqId === reqId) : lista
 
   const subir = async (ficheros: FileList | null) => {
     if (!ficheros?.length) return
@@ -77,7 +64,7 @@ export default function Carpeta({ expedienteId, reqId = null, onCambio, compacta
           { reqId, emitido: new Date().toISOString().slice(0, 10) },
           (pct) => setSubiendo({ nombre: fichero.name, pct })
         )
-        setDocumentos((prev) => [documento, ...prev])
+        documentos.anadir(documento)
         avisar(`«${documento.nombre}» guardado en el expediente.`)
         onCambio?.()
       } catch (e) {
@@ -92,7 +79,17 @@ export default function Carpeta({ expedienteId, reqId = null, onCambio, compacta
   const descargar = async (d: Documento) => {
     try {
       const { url } = await api.url_de_descarga(expedienteId, d.id)
-      window.open(url, '_blank', 'noopener')
+      // `window.open` después de un `await` ha perdido el gesto del usuario y
+      // el navegador lo bloquea como ventana emergente. Un enlace con `download`
+      // no tiene ese problema, y el almacén ya devuelve el fichero como
+      // adjunto, así que descarga sin sacar al agente de la página.
+      const enlace = document.createElement('a')
+      enlace.href = url
+      enlace.download = d.nombreFichero ?? d.nombre
+      enlace.rel = 'noopener'
+      document.body.appendChild(enlace)
+      enlace.click()
+      enlace.remove()
     } catch (e) {
       avisar(e instanceof ApiError ? e.message : 'No se ha podido descargar.', 'mal')
     }
@@ -109,7 +106,7 @@ export default function Carpeta({ expedienteId, reqId = null, onCambio, compacta
       destructiva: true,
       alConfirmar: async () => {
         await api.borrar_documento(expedienteId, d.id)
-        setDocumentos((prev) => prev.filter((x) => x.id !== d.id))
+        documentos.quitar(d.id)
         avisar(`«${d.nombre}» quitado.`, 'neutro')
         onCambio?.()
       },
